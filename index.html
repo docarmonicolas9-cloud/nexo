@@ -6,6 +6,7 @@
 <title>Nexo Estudos</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 :root{
   /* palette */
@@ -1678,6 +1679,82 @@ canvas.an-canvas{display:block;width:100%!important}
 }
 .fm-q-fig-wrap .q-fig-body{padding:16px 18px}
 .fm-q-fig-wrap .q-fig-caption{color:rgba(255,255,255,.3)}
+
+/* ── AUTH ────────────────────────────────────────────────── */
+#auth-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(14px);
+  z-index:1000;align-items:center;justify-content:center;
+}
+#auth-overlay.open{display:flex}
+.auth-box{
+  background:var(--ink2);border:1px solid var(--rim2);
+  border-radius:20px;padding:36px 32px;
+  width:100%;max-width:400px;
+  position:relative;
+}
+.auth-box::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold3),transparent);border-radius:20px 20px 0 0}
+.auth-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;
+  color:var(--gold);text-align:center;margin-bottom:4px}
+.auth-sub{font-size:12px;color:var(--chalk3);text-align:center;font-weight:300;margin-bottom:28px}
+.auth-tabs{display:flex;gap:3px;background:var(--ink4);border:1px solid var(--rim);
+  padding:3px;border-radius:8px;margin-bottom:22px}
+.auth-tab{flex:1;padding:8px;border-radius:6px;cursor:pointer;font-size:13px;
+  color:var(--chalk3);text-align:center;transition:all .15s;user-select:none}
+.auth-tab.on{background:var(--ink2);color:var(--chalk);font-weight:500;
+  border:1px solid var(--rim);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:11px;font-weight:600;color:var(--chalk3);
+  text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+.auth-input{
+  width:100%;background:var(--ink3);border:1px solid var(--rim);
+  border-radius:var(--radius-sm);color:var(--chalk);
+  font-family:'DM Sans',sans-serif;font-size:14px;
+  padding:11px 14px;outline:none;transition:border-color .18s,box-shadow .18s;
+  box-sizing:border-box;
+}
+.auth-input:focus{border-color:rgba(232,184,109,.4);box-shadow:0 0 0 3px var(--goldglow)}
+.auth-btn{
+  width:100%;padding:12px;border-radius:10px;
+  background:linear-gradient(135deg,var(--gold3),var(--amber));
+  color:#111;font-size:14px;font-weight:600;border:none;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .18s;margin-top:4px;
+  box-shadow:0 4px 16px rgba(201,149,42,.25);
+}
+.auth-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,149,42,.4)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.auth-err{font-size:12px;color:var(--rose);margin-top:10px;text-align:center;
+  padding:8px;background:var(--roseglow);border-radius:7px;border:1px solid rgba(244,97,122,.2);display:none}
+.auth-err.show{display:block}
+.auth-ok{font-size:12px;color:var(--emerald);margin-top:10px;text-align:center;
+  padding:8px;background:var(--emeraldglow);border-radius:7px;border:1px solid rgba(52,217,139,.2);display:none}
+.auth-ok.show{display:block}
+.auth-divider{text-align:center;font-size:11px;color:var(--chalk4);margin:16px 0;font-weight:300}
+.auth-skip{
+  width:100%;padding:10px;border-radius:10px;
+  background:transparent;border:1px solid var(--rim);
+  color:var(--chalk3);font-size:13px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .15s;
+}
+.auth-skip:hover{border-color:var(--rim2);color:var(--chalk)}
+/* Topbar user badge */
+#user-badge{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 10px;border-radius:20px;
+  border:1px solid var(--rim);background:var(--ink4);
+  cursor:pointer;transition:all .15s;font-size:12px;color:var(--chalk2);
+}
+#user-badge:hover{border-color:var(--rim2);color:var(--chalk)}
+#user-badge .ub-dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);flex-shrink:0}
+#user-badge .ub-dot.offline{background:var(--chalk4)}
+/* Sync indicator */
+.sync-spin{
+  display:inline-block;width:14px;height:14px;
+  border:2px solid var(--rim);border-top-color:var(--gold3);
+  border-radius:50%;animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -1747,9 +1824,51 @@ canvas.an-canvas{display:block;width:100%!important}
     <div class="top-pills">
       <div class="pill fire">🔥 <span id="streak-val">7</span> dias</div>
       <div class="pill star">⭐ <span id="score-val">0</span> pts</div>
+      <div id="user-badge" onclick="openAuth()">
+        <div class="ub-dot offline" id="ub-dot"></div>
+        <span id="ub-label">Entrar</span>
+      </div>
     </div>
   </div>
   <div id="page"></div>
+</div>
+
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">Nexo Estudos</div>
+    <div class="auth-sub" id="auth-sub">Faça login para salvar seu progresso na nuvem</div>
+    <div class="auth-tabs" id="auth-tabs">
+      <div class="auth-tab on" id="tab-login" onclick="authSetTab('login')">Entrar</div>
+      <div class="auth-tab" id="tab-signup" onclick="authSetTab('signup')">Criar conta</div>
+    </div>
+    <div id="auth-form-area">
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="auth-email" class="auth-input" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')authSubmit()">
+      </div>
+      <div class="auth-field" id="auth-pass-field">
+        <label>Senha</label>
+        <input type="password" id="auth-pass" class="auth-input" placeholder="mínimo 6 caracteres" onkeydown="if(event.key==='Enter')authSubmit()">
+      </div>
+      <div class="auth-err" id="auth-err"></div>
+      <div class="auth-ok" id="auth-ok"></div>
+      <button class="auth-btn" id="auth-submit-btn" onclick="authSubmit()">Entrar</button>
+      <div class="auth-divider">— ou —</div>
+      <button class="auth-skip" onclick="closeAuth()">Continuar sem conta (dados locais)</button>
+    </div>
+    <!-- Logged in state -->
+    <div id="auth-logged-area" style="display:none;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">✅</div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--chalk);margin-bottom:4px">Logado com sucesso!</div>
+      <div style="font-size:12px;color:var(--chalk3);font-weight:300;margin-bottom:20px" id="auth-user-email"></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="auth-btn" onclick="syncNow()">☁️ Sincronizar agora</button>
+        <button class="auth-skip" onclick="authLogout()">Sair da conta</button>
+        <button class="auth-skip" onclick="closeAuth()">Fechar</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL -->
@@ -8655,6 +8774,289 @@ async function shareCopy(){
 }
 
 /* ═══════════════════════════════════════════════════════════
+   SUPABASE AUTH + CLOUD SYNC
+   ─────────────────────────────────────────────────────────
+   SETUP (fazer uma vez):
+   1. Crie conta gratuita em supabase.com
+   2. Crie um projeto
+   3. Vá em Settings → API e copie:
+      - Project URL  → SUPABASE_URL abaixo
+      - anon public key → SUPABASE_KEY abaixo
+   4. No SQL Editor do Supabase, execute:
+
+   CREATE TABLE IF NOT EXISTS user_data (
+     user_id  uuid PRIMARY KEY REFERENCES auth.users(id),
+     payload  jsonb NOT NULL DEFAULT '{}',
+     updated_at timestamptz DEFAULT now()
+   );
+   ALTER TABLE user_data ENABLE ROW LEVEL SECURITY;
+   CREATE POLICY "users own data" ON user_data
+     FOR ALL USING (auth.uid() = user_id);
+
+   5. Substitua as constantes abaixo com seus dados
+═══════════════════════════════════════════════════════════ */
+
+// ⬇️  SUBSTITUA AQUI com suas credenciais do Supabase
+const SUPABASE_URL = 'https://ylvxsrbnzrbcogwsukhl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsdnhzcmJuenJiY29nd3N1a2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NTQ1ODEsImV4cCI6MjA4OTUzMDU4MX0.oLH78VC4DFbO7GbozSl_Jc_9WqWTGtc9QEc8rq8WueU';
+// ⬆️  ─────────────────────────────────────────────────
+
+let _supabase = null;
+let _currentUser = null;
+let _syncTimer = null;
+
+/* Inicializa o cliente Supabase (só se as credenciais foram configuradas) */
+function sbInit(){
+  if(SUPABASE_URL.includes('SEU-PROJETO') || SUPABASE_KEY.includes('SUA-ANON')) return; // não configurado ainda
+  try {
+    _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Escuta mudanças de sessão
+    _supabase.auth.onAuthStateChange((event, session) => {
+      _currentUser = session?.user || null;
+      updateUserBadge();
+      if(event === 'SIGNED_IN'){
+        loadFromCloud();
+      }
+    });
+    // Verifica sessão existente
+    _supabase.auth.getSession().then(({ data: { session } }) => {
+      _currentUser = session?.user || null;
+      updateUserBadge();
+      if(_currentUser) loadFromCloud();
+    });
+  } catch(e){ console.warn('Supabase init error:', e); }
+}
+
+/* ── AUTH UI ─────────────────────────────────────────────── */
+
+let _authTab = 'login';
+
+function openAuth(){
+  const ov = document.getElementById('auth-overlay');
+  ov.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if(_currentUser) showLoggedState();
+  else showLoginForm();
+  if(!SUPABASE_URL.includes('SEU-PROJETO') && !SUPABASE_KEY.includes('SUA-ANON')){
+    document.getElementById('auth-sub').textContent = 'Faça login para salvar seu progresso na nuvem';
+  } else {
+    document.getElementById('auth-sub').textContent = '⚠️ Configure as credenciais do Supabase no código para ativar';
+  }
+}
+
+function closeAuth(){
+  document.getElementById('auth-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function authSetTab(tab){
+  _authTab = tab;
+  document.getElementById('tab-login').classList.toggle('on', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('on', tab==='signup');
+  document.getElementById('auth-submit-btn').textContent = tab==='login' ? 'Entrar' : 'Criar conta';
+  authClearMessages();
+}
+
+function authClearMessages(){
+  document.getElementById('auth-err').classList.remove('show');
+  document.getElementById('auth-ok').classList.remove('show');
+}
+
+function authShowErr(msg){
+  const el = document.getElementById('auth-err');
+  el.textContent = msg; el.classList.add('show');
+}
+
+function authShowOk(msg){
+  const el = document.getElementById('auth-ok');
+  el.textContent = msg; el.classList.add('show');
+}
+
+function showLoginForm(){
+  document.getElementById('auth-form-area').style.display = '';
+  document.getElementById('auth-logged-area').style.display = 'none';
+  document.getElementById('auth-tabs').style.display = '';
+}
+
+function showLoggedState(){
+  document.getElementById('auth-form-area').style.display = 'none';
+  document.getElementById('auth-logged-area').style.display = '';
+  document.getElementById('auth-tabs').style.display = 'none';
+  const emailEl = document.getElementById('auth-user-email');
+  if(emailEl && _currentUser) emailEl.textContent = _currentUser.email;
+}
+
+async function authSubmit(){
+  if(!_supabase){ authShowErr('Configure as credenciais do Supabase primeiro.'); return; }
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  if(!email || !pass){ authShowErr('Preencha email e senha.'); return; }
+  if(pass.length < 6){ authShowErr('Senha deve ter pelo menos 6 caracteres.'); return; }
+
+  const btn = document.getElementById('auth-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="sync-spin"></span> Aguarde...';
+  authClearMessages();
+
+  try {
+    let result;
+    if(_authTab === 'login'){
+      result = await _supabase.auth.signInWithPassword({ email, password: pass });
+    } else {
+      result = await _supabase.auth.signUp({ email, password: pass });
+    }
+
+    if(result.error){
+      authShowErr(translateAuthError(result.error.message));
+    } else {
+      if(_authTab === 'signup' && !result.data.session){
+        authShowOk('✅ Conta criada! Verifique seu email para confirmar.');
+      } else {
+        authShowOk('✅ Login realizado! Sincronizando dados...');
+        setTimeout(()=>{ showLoggedState(); updateUserBadge(); }, 800);
+      }
+    }
+  } catch(e){
+    authShowErr('Erro inesperado. Tente novamente.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = _authTab === 'login' ? 'Entrar' : 'Criar conta';
+  }
+}
+
+function translateAuthError(msg){
+  if(msg.includes('Invalid login')) return 'Email ou senha incorretos.';
+  if(msg.includes('Email not confirmed')) return 'Confirme seu email antes de entrar.';
+  if(msg.includes('already registered')) return 'Este email já tem uma conta. Faça login.';
+  if(msg.includes('Network')) return 'Sem conexão. Verifique sua internet.';
+  return msg;
+}
+
+async function authLogout(){
+  if(!_supabase) return;
+  await _supabase.auth.signOut();
+  _currentUser = null;
+  updateUserBadge();
+  showLoginForm();
+  showToast('👋 Logout realizado. Dados locais mantidos.');
+}
+
+function updateUserBadge(){
+  const dot   = document.getElementById('ub-dot');
+  const label = document.getElementById('ub-label');
+  if(!dot || !label) return;
+  if(_currentUser){
+    dot.className = 'ub-dot';
+    const name = _currentUser.email?.split('@')[0] || 'Você';
+    label.textContent = name.length > 12 ? name.substring(0,12)+'…' : name;
+  } else {
+    dot.className = 'ub-dot offline';
+    label.textContent = 'Entrar';
+  }
+}
+
+/* ── CLOUD SYNC ──────────────────────────────────────────── */
+
+function collectAllData(){
+  return {
+    prog:       progress,
+    sel:        selections,
+    notes:      userNotes,
+    score:      ST.score,
+    sr:         srCards,
+    fc:         fcCards,
+    hist:       ansHistory.slice(-500), // last 500 events max
+    ach:        achEarned,
+    plano_cfg:  planoConfig,
+    plano_chk:  planoChecked,
+    sim_stats:  loadP('nexo_sim_stats',{}),
+    focus:      loadP('nexo_focus_count',0),
+    version:    2,
+    savedAt:    new Date().toISOString(),
+  };
+}
+
+function applyCloudData(data){
+  if(!data) return;
+  // Merge progress (cloud wins for answered questions)
+  if(data.prog)      Object.assign(progress,    data.prog);
+  if(data.sel)       Object.assign(selections,  data.sel);
+  if(data.notes)     Object.assign(userNotes,   data.notes);
+  if(data.score!==undefined && data.score > ST.score){
+    ST.score = data.score;
+    document.getElementById('score-val').textContent = ST.score;
+  }
+  if(data.sr)        Object.assign(srCards,     data.sr);
+  if(data.fc)        Object.assign(fcCards,     data.fc);
+  if(data.hist && Array.isArray(data.hist)){
+    // Merge history by timestamp dedup
+    const existingTs = new Set(ansHistory.map(e=>e.ts));
+    data.hist.forEach(e=>{ if(!existingTs.has(e.ts)) ansHistory.push(e); });
+    ansHistory.sort((a,b)=>a.ts-b.ts);
+  }
+  if(data.ach)       Object.assign(achEarned,   data.ach);
+  if(data.plano_cfg && data.plano_cfg.examDate){
+    Object.assign(planoConfig, data.plano_cfg);
+    if(planoConfig.examDate) PL.phase='schedule';
+  }
+  if(data.plano_chk) Object.assign(planoChecked, data.plano_chk);
+  if(data.sim_stats) localStorage.setItem('nexo_sim_stats', JSON.stringify(data.sim_stats));
+  if(data.focus)     localStorage.setItem('nexo_focus_count', data.focus);
+
+  // Persist locally
+  saveAll(); saveSR(); saveFC(); saveHist(); saveAch(); savePlano(); savePlanoChk();
+  updateSRBadge(); updateFCBadge(); updateAchBadge();
+  render();
+}
+
+async function loadFromCloud(){
+  if(!_supabase || !_currentUser) return;
+  try {
+    const { data, error } = await _supabase
+      .from('user_data')
+      .select('payload')
+      .eq('user_id', _currentUser.id)
+      .single();
+    if(error && error.code !== 'PGRST116') throw error; // PGRST116 = not found (first login)
+    if(data?.payload) applyCloudData(data.payload);
+    showToast('☁️ Progresso sincronizado da nuvem!');
+  } catch(e){ console.warn('Load from cloud error:', e); }
+}
+
+async function saveToCloud(){
+  if(!_supabase || !_currentUser) return;
+  try {
+    const payload = collectAllData();
+    const { error } = await _supabase
+      .from('user_data')
+      .upsert({ user_id: _currentUser.id, payload, updated_at: new Date().toISOString() });
+    if(error) throw error;
+  } catch(e){ console.warn('Save to cloud error:', e); }
+}
+
+/* Auto-sync 30s after last save (debounced) */
+function scheduleSync(){
+  if(!_currentUser) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(saveToCloud, 30000);
+}
+
+async function syncNow(){
+  if(!_supabase || !_currentUser){ showToast('Faça login para sincronizar.'); return; }
+  showToast('<span class="sync-spin"></span> Sincronizando...');
+  await saveToCloud();
+  showToast('☁️ Dados salvos na nuvem!');
+  closeAuth();
+}
+
+/* Hook all save functions to also schedule cloud sync */
+const _origSaveAll = saveAll;
+saveAll = function(){
+  _origSaveAll();
+  scheduleSync();
+};
+
+/* ═══════════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════════ */
 document.getElementById('score-val').textContent=ST.score;
@@ -8696,6 +9098,7 @@ updateSRBadge();
 updateFCBadge();
 updateAchBadge();
 achCheckAll();  // Check on load in case achievements were already earned
+sbInit();       // Initialize Supabase auth
 render();
 </script>
 </body>
