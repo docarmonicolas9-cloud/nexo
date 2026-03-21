@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Nexo — Estude melhor, todo dia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0a0f;--sf:#12121a;--sf2:#1a1a26;--bd:#2a2a3d;
+  --acc:#f0c060;--acc2:#7c6af0;--acc3:#4ecca3;
+  --tx:#e8e8f0;--mt:#7878a0;--err:#e05c6a;--ok:#4ecca3;
+  --r:14px;--rs:8px;
+  --fd:'Playfair Display',Georgia,serif;
+  --fb:'DM Sans',system-ui,sans-serif;
+  --fm:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.5}
+
+/* APP */
+#page-app{display:none;flex-direction:column;min-height:100vh}
+#page-app.active{display:flex}
+
+/* LOADING */
+#ls{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px;transition:opacity .5s}
+#ls.hidden{opacity:0;pointer-events:none}
+.ll{font-family:var(--fd);font-size:2rem;font-weight:900;background:linear-gradient(135deg,var(--acc),#fff 70%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.lb{width:200px;height:3px;background:var(--bd);border-radius:2px;overflow:hidden}
+.lp{height:100%;background:linear-gradient(90deg,var(--acc2),var(--acc));border-radius:2px;animation:lba 1.2s ease both}
+@keyframes lba{from{width:0}to{width:100%}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.mo.open{display:flex;animation:fadeUp .2s ease}
+.mb{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:32px;width:100%;max-width:390px;box-shadow:0 32px 80px rgba(0,0,0,.6);position:relative;animation:fadeUp .25s ease}
+.mc{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--mt);font-size:1.4rem;cursor:pointer;padding:4px;line-height:1;border-radius:4px;transition:color .15s}
+.mc:hover{color:var(--tx)}
+.ml{text-align:center;margin-bottom:24px}
+.ml-ic{width:38px;height:38px;background:linear-gradient(135deg,var(--acc),#d05010);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:8px}
+.ml h2{font-family:var(--fd);font-size:1.4rem;font-weight:700;margin-bottom:3px}
+.ml p{color:var(--mt);font-size:.82rem}
+.mt-tabs{display:flex;gap:4px;background:var(--bg);border-radius:var(--rs);padding:4px;margin-bottom:20px}
+.mt-tab{flex:1;padding:8px;border:none;background:transparent;color:var(--mt);font-family:var(--fb);font-size:.86rem;font-weight:500;cursor:pointer;border-radius:6px;transition:all .2s}
+.mt-tab.active{background:var(--sf2);color:var(--tx)}
+.af{display:flex;flex-direction:column;gap:13px}
+.af.hidden{display:none}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:.73rem;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.9px}
+.fg input{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 13px;color:var(--tx);font-family:var(--fb);font-size:.92rem;outline:none;transition:border-color .2s;width:100%}
+.fg input:focus{border-color:var(--acc2)}
+.fg input::placeholder{color:var(--mt)}
+.fg select{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 13px;color:var(--tx);font-family:var(--fb);font-size:.9rem;outline:none;transition:border-color .2s;width:100%}
+.fg select:focus{border-color:var(--acc2)}
+.fg select option{background:var(--sf)}
+.am{font-size:.8rem;padding:9px 13px;border-radius:var(--rs);display:none}
+.am.err{background:rgba(224,92,106,.12);color:var(--err);display:block;border:1px solid rgba(224,92,106,.25)}
+.am.ok{background:rgba(78,204,163,.12);color:var(--ok);display:block;border:1px solid rgba(78,204,163,.25)}
+
+/* BUTTONS */
+.btn{border:none;border-radius:var(--rs);font-family:var(--fb);font-size:.9rem;font-weight:600;cursor:pointer;transition:opacity .2s,transform .1s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-p{background:linear-gradient(135deg,var(--acc2),#4030b0);color:#fff;padding:11px 20px}
+.btn-g{background:transparent;border:1px solid var(--bd);color:var(--mt);padding:7px 14px;font-size:.82rem}
+.btn-g:hover{border-color:var(--acc2);color:var(--tx);opacity:1}
+.btn-gp{background:linear-gradient(135deg,var(--acc2),#4030b0);color:#fff;padding:7px 14px;font-size:.82rem;border:none}
+.btn-s{background:rgba(78,204,163,.12);border:1px solid rgba(78,204,163,.3);color:var(--ok);padding:11px 20px}
+.btn-s.done{opacity:.65}
+.btn-f{width:100%}
+.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--bd);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tlogo{display:flex;align-items:center;gap:9px;font-family:var(--fd);font-size:1.2rem;font-weight:700;cursor:pointer;flex-shrink:0}
+.tlogo .ti{width:28px;height:28px;background:linear-gradient(135deg,var(--acc),#d05010);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px}
+.tnav{display:flex;gap:2px;background:var(--sf);border-radius:10px;padding:3px;border:1px solid var(--bd);overflow-x:auto;scrollbar-width:none}
+.tnav::-webkit-scrollbar{display:none}
+.nb{padding:6px 11px;border:none;background:transparent;color:var(--mt);font-family:var(--fb);font-size:.78rem;font-weight:500;cursor:pointer;border-radius:7px;transition:all .2s;white-space:nowrap}
+.nb.active{background:var(--sf2);color:var(--tx)}
+.nb:hover:not(.active){color:var(--tx)}
+.tright{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.sbadge{display:flex;align-items:center;gap:4px;background:rgba(240,192,96,.1);border:1px solid rgba(240,192,96,.25);border-radius:20px;padding:4px 10px;font-size:.76rem;font-weight:600;color:var(--acc)}
+.cbadge{display:none;align-items:center;gap:5px;font-size:.72rem;color:var(--ok);background:rgba(78,204,163,.08);border:1px solid rgba(78,204,163,.2);border-radius:20px;padding:4px 10px;flex-shrink:0}
+.cbadge.visible{display:flex}
+.av-wrap{position:relative}
+.av-btn{width:32px;height:32px;background:linear-gradient(135deg,var(--acc2),#4030b0);border-radius:50%;border:none;cursor:pointer;color:#fff;font-weight:700;font-size:.83rem;display:flex;align-items:center;justify-content:center}
+.av-menu{position:absolute;top:calc(100% + 7px);right:0;background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);padding:5px;min-width:165px;display:none;z-index:200;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+.av-menu.open{display:block}
+.av-email{padding:7px 11px;font-size:.74rem;color:var(--mt);border-bottom:1px solid var(--bd);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av-menu button{width:100%;padding:7px 11px;background:none;border:none;color:var(--tx);font-family:var(--fb);font-size:.84rem;text-align:left;cursor:pointer;border-radius:5px;transition:background .15s;display:flex;align-items:center;gap:7px}
+.av-menu button:hover{background:var(--sf2)}
+.ga{display:flex;align-items:center;gap:7px}
+
+/* MOBILE NAV */
+.mnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.97);backdrop-filter:blur(16px);border-top:1px solid var(--bd);padding:6px 0 max(6px,env(safe-area-inset-bottom));justify-content:space-around}
+.mnb{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 10px;background:none;border:none;color:var(--mt);font-family:var(--fb);font-size:.62rem;font-weight:500;cursor:pointer;transition:color .2s;border-radius:7px}
+.mnb .mi{font-size:17px;line-height:1}
+.mnb.active{color:var(--acc2)}
+
+/* MAIN */
+.mc-wrap{flex:1;padding:24px 20px 80px;max-width:1100px;margin:0 auto;width:100%}
+.screen{display:none}
+.screen.active{display:block;animation:fadeUp .3s ease both}
+
+/* SYNC */
+.sync-bar{display:flex;justify-content:flex-end;margin-bottom:8px;font-size:.7rem;color:var(--mt);align-items:center;gap:5px}
+.sync-bar .sd{width:5px;height:5px;border-radius:50%;background:currentColor}
+.sync-bar.syncing{color:var(--acc)}
+.sync-bar.synced{color:var(--ok)}
+.sync-bar.errored{color:var(--err)}
+
+/* SECTION HEADER */
+.sh{font-family:var(--fd);font-size:1.15rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.sh::after{content:'';flex:1;height:1px;background:var(--bd)}
+
+/* DASHBOARD */
+.wb{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:10px}
+.wb h2{font-family:var(--fd);font-size:1.8rem;font-weight:700;line-height:1.2}
+.wb p{color:var(--mt);font-size:.86rem;margin-top:4px}
+.tip-box{background:linear-gradient(135deg,rgba(124,106,240,.12),rgba(78,204,163,.06));border:1px solid rgba(124,106,240,.22);border-radius:var(--r);padding:13px 17px;font-size:.84rem;color:#ccd0e8;line-height:1.65;margin-bottom:22px}
+.tip-box strong{color:var(--acc2)}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.sc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s;cursor:default}
+.sc:hover{border-color:var(--acc2);transform:translateY(-2px)}
+.sc .si{font-size:22px;margin-bottom:8px;display:block}
+.sc .sv{font-family:var(--fd);font-size:1.9rem;font-weight:700;display:block;margin-bottom:2px}
+.sc .sl{color:var(--mt);font-size:.76rem}
+.sc .ac{position:absolute;top:12px;right:12px;width:5px;height:5px;border-radius:50%}
+
+/* SUBJECT GRID */
+.subj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:11px}
+.subj-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.subj-card::before{content:'';position:absolute;inset:0;background:var(--sc,#7c6af0);opacity:0;transition:opacity .2s}
+.subj-card:hover{border-color:var(--sc,#7c6af0);transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,.3)}
+.subj-card:hover::before{opacity:.06}
+.subj-card .sic{font-size:24px;margin-bottom:8px;display:block}
+.subj-card .sn{font-weight:600;font-size:.88rem;margin-bottom:5px;position:relative}
+.subj-card .st{color:var(--mt);font-size:.74rem;margin-bottom:9px;position:relative}
+.pb{height:3px;background:var(--bd);border-radius:2px;overflow:hidden}
+.pf{height:100%;border-radius:2px;transition:width .8s ease}
+
+/* TOPICS */
+.study-hdr{display:flex;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+.bbtn{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx);padding:7px 13px;cursor:pointer;font-family:var(--fb);font-size:.84rem;display:inline-flex;align-items:center;gap:5px;transition:border-color .2s;flex-shrink:0}
+.bbtn:hover{border-color:var(--acc2)}
+.tlist{display:flex;flex-direction:column;gap:7px}
+.ti-item{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:13px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s}
+.ti-item:hover{border-color:var(--acc2);transform:translateX(4px)}
+.ti-item.done{border-color:rgba(78,204,163,.25)}
+.ti-item.done:hover{border-color:var(--ok)}
+.ti-st{width:24px;height:24px;border-radius:50%;border:2px solid var(--bd);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .2s}
+.ti-item.done .ti-st{border-color:var(--ok);background:rgba(78,204,163,.15);color:var(--ok)}
+.ti-info{flex:1;min-width:0}
+.ti-info h4{font-weight:600;font-size:.88rem;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ti-info p{color:var(--mt);font-size:.74rem}
+.ti-arr{color:var(--mt);font-size:.95rem;flex-shrink:0}
+
+/* LESSON */
+.lhdr{display:flex;align-items:flex-start;gap:12px;margin-bottom:20px}
+.lhdr h2{font-family:var(--fd);font-size:1.5rem;font-weight:700;flex:1;line-height:1.25}
+.lbody{display:grid;grid-template-columns:1fr 310px;gap:18px;align-items:start}
+.lcontent{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:24px;line-height:1.8;font-size:.9rem}
+.lcontent h3{font-family:var(--fd);font-size:1rem;margin:18px 0 7px;color:var(--acc)}
+.lcontent h3:first-child{margin-top:0}
+.lcontent p{margin-bottom:11px;color:#ccd0e8}
+.lcontent ul,.lcontent ol{padding-left:19px;margin-bottom:11px}
+.lcontent li{margin-bottom:4px;color:#ccd0e8}
+.lcontent strong{color:var(--tx);font-weight:600}
+.hbox{background:rgba(124,106,240,.1);border-left:3px solid var(--acc2);border-radius:0 var(--rs) var(--rs) 0;padding:11px 14px;margin:11px 0;font-size:.85rem;color:#ccd0e8;line-height:1.6}
+.formula{font-family:var(--fm);background:var(--bg);border:1px solid var(--bd);border-radius:var(--rs);padding:11px 14px;margin:10px 0;font-size:.84rem;color:var(--acc3);overflow-x:auto;white-space:pre-wrap;line-height:1.65}
+.lsidebar{position:sticky;top:78px;display:flex;flex-direction:column;gap:11px}
+.qcard{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:18px}
+.qlabel{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.9px;color:var(--acc2);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.qprog{font-size:.7rem;color:var(--mt);margin-left:auto;font-family:var(--fm)}
+.qq{font-size:.86rem;line-height:1.6;margin-bottom:11px;font-weight:500}
+.qopts{display:flex;flex-direction:column;gap:6px}
+.qopt{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 11px;cursor:pointer;font-family:var(--fb);font-size:.83rem;color:var(--tx);text-align:left;transition:all .2s;display:flex;align-items:flex-start;gap:7px}
+.qopt:hover:not(:disabled){border-color:var(--acc2);background:rgba(124,106,240,.07)}
+.qopt.correct{border-color:var(--ok)!important;background:rgba(78,204,163,.1)!important;color:var(--ok)!important}
+.qopt.wrong{border-color:var(--err)!important;background:rgba(224,92,106,.1)!important;color:var(--err)!important}
+.ol{width:19px;height:19px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:700;flex-shrink:0;opacity:.6;margin-top:1px}
+.qres{margin-top:9px;padding:8px 11px;border-radius:var(--rs);font-size:.79rem;display:none;line-height:1.5}
+.qres.show{display:block}
+.qres.correct{background:rgba(78,204,163,.1);color:var(--ok);border:1px solid rgba(78,204,163,.25)}
+.qres.wrong{background:rgba(224,92,106,.1);color:var(--err);border:1px solid rgba(224,92,106,.25)}
+.nqbtn{width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);color:var(--mt);font-family:var(--fb);font-size:.8rem;padding:8px;cursor:pointer;transition:all .2s;margin-top:7px;display:none}
+.nqbtn:hover{border-color:var(--acc2);color:var(--tx)}
+
+/* FLASHCARDS */
+.fc-ctrl{display:flex;gap:9px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.fcsel{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx);padding:8px 12px;font-family:var(--fb);font-size:.83rem;outline:none;cursor:pointer;transition:border-color .2s}
+.fcsel:focus{border-color:var(--acc2)}
+.fcsel option{background:var(--sf)}
+.fcc{margin-left:auto;color:var(--mt);font-size:.8rem;font-family:var(--fm)}
+.fc-arena{display:flex;flex-direction:column;align-items:center;gap:16px}
+.fc-stage{width:100%;max-width:560px;perspective:1200px}
+.flashcard{width:100%;height:220px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.flashcard.flipped{transform:rotateY(180deg)}
+.cface{position:absolute;inset:0;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.cface.back{transform:rotateY(180deg);border-color:rgba(78,204,163,.22)}
+.clabel{font-size:.67rem;text-transform:uppercase;letter-spacing:1.2px;font-weight:600;color:var(--mt);margin-bottom:11px}
+.cface.back .clabel{color:var(--acc3)}
+.ctext{font-family:var(--fd);font-size:1.05rem;font-weight:600;line-height:1.5;max-width:400px}
+.cface.back .ctext{font-family:var(--fb);font-size:.87rem;font-weight:400;line-height:1.7}
+.csubj{margin-top:11px;font-size:.7rem;padding:3px 9px;border-radius:20px;background:rgba(124,106,240,.12);color:var(--acc2);font-weight:500}
+.fc-hint{color:var(--mt);font-size:.77rem;display:flex;align-items:center;gap:5px}
+.fc-acts{display:none;gap:9px}
+.fcbtn{flex:1;max-width:140px;padding:9px 14px;border-radius:var(--rs);border:1px solid;font-family:var(--fb);font-size:.84rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:4px}
+.fcbtn.again{background:rgba(224,92,106,.1);border-color:rgba(224,92,106,.3);color:var(--err)}
+.fcbtn.good{background:rgba(240,192,96,.1);border-color:rgba(240,192,96,.3);color:var(--acc)}
+.fcbtn.easy{background:rgba(78,204,163,.1);border-color:rgba(78,204,163,.3);color:var(--ok)}
+#fc-done{display:none;text-align:center;padding:36px;color:var(--mt)}
+.fc-ss{display:none;gap:14px;font-size:.78rem;font-family:var(--fm)}
+.fc-si{display:flex;align-items:center;gap:4px}
+
+/* SCHEDULE */
+.sched-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin-bottom:18px}
+.dc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:11px 9px;text-align:center;min-height:95px}
+.dn{font-size:.62rem;text-transform:uppercase;letter-spacing:.7px;color:var(--mt);margin-bottom:7px;font-weight:600}
+.dt{display:flex;flex-direction:column;gap:4px}
+.dtask{font-size:.68rem;padding:4px 6px;border-radius:5px;font-weight:500;text-align:left;cursor:pointer;transition:opacity .15s;line-height:1.3}
+.dtask:hover{opacity:.65}
+.sadd{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px}
+.sadd h3{font-size:.9rem;font-weight:600;margin-bottom:13px}
+.sform{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end}
+.sform .fg{flex:1;min-width:115px}
+
+/* REDAÇÃO */
+.comp-list{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px;margin-bottom:22px}
+.comp{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.comp:last-child{border-bottom:none}
+.cnum{width:28px;height:28px;background:linear-gradient(135deg,var(--acc2),#4030b0);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.78rem;flex-shrink:0}
+.cinfo{flex:1;min-width:0}
+.cinfo h4{font-size:.85rem;font-weight:600;margin-bottom:2px}
+.cinfo p{color:var(--mt);font-size:.74rem;line-height:1.4}
+.cpts{font-family:var(--fd);font-size:1rem;font-weight:700;color:var(--acc);flex-shrink:0}
+.tips-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:11px;margin-bottom:20px}
+.tip-c{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:16px}
+.tip-n{font-family:var(--fd);font-size:2rem;font-weight:900;color:var(--bd);line-height:1;margin-bottom:6px}
+.tip-c h4{font-weight:600;font-size:.88rem;margin-bottom:4px}
+.tip-c p{color:var(--mt);font-size:.77rem;line-height:1.5}
+.con-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+.con-cat{font-size:.69rem;text-transform:uppercase;letter-spacing:.9px;font-weight:600;margin-bottom:7px}
+.con-list{font-family:var(--fm);font-size:.78rem;color:var(--mt);line-height:2.1}
+
+/* ═══ VESTIBULARES ═══ */
+.vest-hdr{margin-bottom:22px}
+.vest-hdr h2{font-family:var(--fd);font-size:1.8rem;font-weight:700;margin-bottom:4px}
+.vest-hdr p{color:var(--mt);font-size:.87rem}
+.vest-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.vtab{padding:8px 16px;border:1px solid var(--bd);border-radius:20px;background:transparent;color:var(--mt);font-family:var(--fb);font-size:.83rem;font-weight:500;cursor:pointer;transition:all .2s}
+.vtab.active{background:var(--acc2);border-color:var(--acc2);color:#fff}
+.vtab:hover:not(.active){border-color:var(--acc2);color:var(--tx)}
+.vest-filters{display:flex;gap:9px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.vstat-bar{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.vstat{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:120px}
+.vstat .vsi{font-size:20px}
+.vstat .vsv{font-family:var(--fd);font-size:1.4rem;font-weight:700;line-height:1}
+.vstat .vsl{font-size:.73rem;color:var(--mt)}
+.qlist{display:flex;flex-direction:column;gap:14px}
+.vq-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:22px;transition:border-color .2s}
+.vq-card.answered{border-color:rgba(78,204,163,.25)}
+.vq-card.answered.wrong{border-color:rgba(224,92,106,.25)}
+.vq-meta{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.vq-badge{font-size:.68rem;font-weight:600;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+.vq-year{background:rgba(124,106,240,.12);color:var(--acc2)}
+.vq-subj{background:rgba(240,192,96,.1);color:var(--acc)}
+.vq-diff{font-size:.68rem;padding:3px 9px;border-radius:20px;font-weight:600}
+.diff-f{background:rgba(78,204,163,.1);color:var(--ok)}
+.diff-m{background:rgba(240,192,96,.1);color:var(--acc)}
+.diff-d{background:rgba(224,92,106,.1);color:var(--err)}
+.vq-num{font-size:.72rem;color:var(--mt);font-family:var(--fm);margin-left:auto}
+.vq-txt{font-size:.9rem;line-height:1.7;margin-bottom:14px;color:var(--tx)}
+.vq-opts{display:flex;flex-direction:column;gap:6px;margin-bottom:11px}
+.vq-opt{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rs);padding:9px 13px;cursor:pointer;font-family:var(--fb);font-size:.85rem;color:var(--tx);text-align:left;transition:all .2s;display:flex;align-items:flex-start;gap:8px}
+.vq-opt:hover:not(:disabled){border-color:var(--acc2);background:rgba(124,106,240,.06)}
+.vq-opt.correct{border-color:var(--ok)!important;background:rgba(78,204,163,.1)!important;color:var(--ok)!important}
+.vq-opt.wrong{border-color:var(--err)!important;background:rgba(224,92,106,.1)!important;color:var(--err)!important}
+.vq-exp{margin-top:10px;padding:10px 13px;border-radius:var(--rs);font-size:.81rem;display:none;line-height:1.6}
+.vq-exp.show{display:block}
+.vq-exp.correct{background:rgba(78,204,163,.08);color:var(--ok);border:1px solid rgba(78,204,163,.2)}
+.vq-exp.wrong{background:rgba(224,92,106,.08);color:var(--err);border:1px solid rgba(224,92,106,.2)}
+.no-qs{text-align:center;padding:48px 20px;color:var(--mt)}
+.no-qs .nq-icon{font-size:3rem;margin-bottom:12px}
+.no-qs p{font-size:.9rem}
+.vest-score{background:linear-gradient(135deg,rgba(124,106,240,.15),rgba(78,204,163,.08));border:1px solid rgba(124,106,240,.2);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.vest-score .vs-num{font-family:var(--fd);font-size:2rem;font-weight:700;color:var(--acc2)}
+.vest-score .vs-txt{font-size:.86rem;color:var(--mt)}
+.vest-score .vs-reset{margin-left:auto;background:transparent;border:1px solid var(--bd);border-radius:var(--rs);color:var(--mt);font-family:var(--fb);font-size:.78rem;padding:6px 12px;cursor:pointer;transition:all .2s}
+.vest-score .vs-reset:hover{border-color:var(--acc2);color:var(--tx)}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:10px 18px;font-size:.84rem;font-weight:500;z-index:9999;transition:transform .3s;pointer-events:none;white-space:nowrap;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:rgba(78,204,163,.4);color:var(--ok)}
+.toast.error{border-color:rgba(224,92,106,.4);color:var(--err)}
+
+/* RESPONSIVE */
+@media(max-width:950px){.sg{grid-template-columns:repeat(2,1fr)}.lbody{grid-template-columns:1fr}.lsidebar{position:static}.sched-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:640px){.tnav{display:none}.mnav{display:flex}.mc-wrap{padding:18px 14px 86px}.sg{grid-template-columns:repeat(2,1fr)}.sbadge{display:none}}
+
+/* FOCUS MODE */
+.focus-mode .topbar,.focus-mode .mnav,.focus-mode .lsidebar,.focus-mode .lhdr .bbtn{display:none!important}
+.focus-mode .lbody{grid-template-columns:1fr}
+.focus-mode .mc-wrap{padding:24px 5vw 40px;max-width:820px}
+.focus-exit{position:fixed;bottom:20px;right:20px;z-index:200;background:var(--acc2);color:#fff;border:none;border-radius:25px;padding:10px 20px;font-family:var(--fb);font-size:.85rem;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(124,106,240,.4);transition:opacity .2s;display:none}
+.focus-mode .focus-exit{display:flex;align-items:center;gap:6px}
+
+/* POMODORO */
+.pomo-wrap{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:18px;margin-top:16px;text-align:center}
+.pomo-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.9px;color:var(--mt);margin-bottom:8px;font-weight:600}
+.pomo-time{font-family:var(--fd);font-size:2.2rem;font-weight:700;color:var(--tx);margin-bottom:12px;letter-spacing:2px}
+.pomo-ring{width:90px;height:90px;margin:0 auto 12px;position:relative}
+.pomo-ring svg{transform:rotate(-90deg)}
+.pomo-ring circle{fill:none;stroke-width:6}
+.pomo-ring .bg{stroke:var(--bd)}
+.pomo-ring .fg{stroke:var(--acc2);stroke-dasharray:251;stroke-dashoffset:0;transition:stroke-dashoffset .5s linear;stroke-linecap:round}
+.pomo-ring .ft{stroke:var(--ok)}
+.pomo-time-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:.95rem;font-weight:700}
+.pomo-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.pomo-btn{padding:7px 14px;border-radius:var(--rs);border:1px solid var(--bd);background:transparent;color:var(--mt);font-family:var(--fb);font-size:.8rem;cursor:pointer;transition:all .2s}
+.pomo-btn:hover{border-color:var(--acc2);color:var(--tx)}
+.pomo-btn.active{background:var(--acc2);border-color:var(--acc2);color:#fff}
+.pomo-phase{font-size:.75rem;color:var(--mt);margin-bottom:4px}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:16px}
+.search-wrap input{width:100%;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:10px 16px 10px 38px;color:var(--tx);font-family:var(--fb);font-size:.9rem;outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--acc2)}
+.search-wrap input::placeholder{color:var(--mt)}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--mt);font-size:.9rem;pointer-events:none}
+
+/* UNMARK BUTTON */
+.btn-unmark{background:rgba(224,92,106,.08);border:1px solid rgba(224,92,106,.25);color:var(--err);padding:8px 14px;font-size:.8rem;border-radius:var(--rs);cursor:pointer;font-family:var(--fb);font-weight:500;transition:all .2s;display:none}
+.btn-unmark.visible{display:inline-flex;align-items:center;gap:5px}
+.btn-unmark:hover{background:rgba(224,92,106,.15)}
+
+/* LESSON TOOLS BAR */
+.lesson-tools{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.lesson-tools .ltime{font-size:.76rem;color:var(--mt);font-family:var(--fm)}
+</style>
+</head>
+<body>
+<div id="ls"><div class="ll">&#10022; Nexo</div><div class="lb"><div class="lp"></div></div></div>
+<div class="toast" id="toast"></div>
+<button class="focus-exit" id="focus-exit" onclick="exitFocus()">&#10005; Sair do Foco</button>
+
+<!-- AUTH MODAL -->
+<div class="mo" id="modal-auth" onclick="closeModal(event)">
+  <div class="mb">
+    <button class="mc" onclick="closeModalDirect()">&#215;</button>
+    <div class="ml"><div class="ml-ic">&#10022;</div><h2 id="m-title">Entrar no Nexo</h2><p id="m-sub">&#9729; Sincronize seu progresso em qualquer dispositivo</p></div>
+    <div class="mt-tabs"><button class="mt-tab active" id="tab-li" onclick="switchTab('login')">Entrar</button><button class="mt-tab" id="tab-rg" onclick="switchTab('register')">Criar conta</button></div>
+    <div class="af" id="form-login">
+      <div class="am" id="msg-li"></div>
+      <div class="fg"><label>E-mail</label><input type="email" id="li-em" placeholder="seu@email.com" autocomplete="email"/></div>
+      <div class="fg"><label>Senha</label><input type="password" id="li-pw" placeholder="Sua senha" autocomplete="current-password"/></div>
+      <button class="btn btn-p btn-f" id="btn-li" onclick="doLogin()">Entrar</button>
+    </div>
+    <div class="af hidden" id="form-register">
+      <div class="am" id="msg-rg"></div>
+      <div class="fg"><label>Nome</label><input type="text" id="rg-nm" placeholder="Como quer ser chamado?"/></div>
+      <div class="fg"><label>E-mail</label><input type="email" id="rg-em" placeholder="seu@email.com" autocomplete="email"/></div>
+      <div class="fg"><label>Senha</label><input type="password" id="rg-pw" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/></div>
+      <button class="btn btn-p btn-f" id="btn-rg" onclick="doRegister()">Criar conta grátis</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="page-app" class="page">
+  <div class="topbar">
+    <div class="tlogo" onclick="nav('dashboard')"><div class="ti">&#10022;</div>Nexo</div>
+    <nav class="tnav">
+      <button class="nb active" data-s="dashboard" onclick="nav('dashboard')">Início</button>
+      <button class="nb" data-s="flashcards" onclick="nav('flashcards')">Flashcards</button>
+      <button class="nb" data-s="vestibulares" onclick="nav('vestibulares')">Vestibulares</button>
+      <button class="nb" data-s="schedule" onclick="nav('schedule')">Cronograma</button>
+      <button class="nb" data-s="redacao" onclick="nav('redacao')">Redação</button>
+    </nav>
+    <div class="tright">
+      <div class="sbadge">&#128293; <span id="streak-count">0</span> dias</div>
+      <div class="cbadge" id="cloud-badge">&#9729; Nuvem</div>
+      <div class="ga" id="guest-actions">
+        <button class="btn btn-g" onclick="openModal('login')">Entrar</button>
+        <button class="btn btn-gp" onclick="openModal('register')">Criar conta</button>
+      </div>
+      <div class="av-wrap" id="av-wrap" style="display:none">
+        <button class="av-btn" id="av-btn" onclick="toggleMenu()"><span id="av-lt">?</span></button>
+        <div class="av-menu" id="av-menu">
+          <div class="av-email" id="av-em">—</div>
+          <button onclick="nav('vestibulares')">&#127891; Vestibulares</button>
+          <button onclick="nav('redacao')">&#9998; Redação</button>
+          <button onclick="doLogout()" style="color:var(--err)">&#8594; Sair</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="mnav" id="mobile-nav">
+    <button class="mnb active" data-s="dashboard" onclick="nav('dashboard')"><span class="mi">&#9678;</span>Início</button>
+    <button class="mnb" data-s="flashcards" onclick="nav('flashcards')"><span class="mi">&#10192;</span>Cards</button>
+    <button class="mnb" data-s="vestibulares" onclick="nav('vestibulares')"><span class="mi">&#127891;</span>Provas</button>
+    <button class="mnb" data-s="schedule" onclick="nav('schedule')"><span class="mi">&#128197;</span>Agenda</button>
+    <button class="mnb" data-s="redacao" onclick="nav('redacao')"><span class="mi">&#9998;</span>Redação</button>
+  </nav>
+
+  <div class="mc-wrap">
+    <div class="sync-bar" id="sync-bar" style="display:none"><div class="sd"></div><span id="sync-txt">Sincronizado</span></div>
+
+    <!-- DASHBOARD -->
+    <div class="screen active" id="screen-dashboard">
+      <div class="wb">
+        <div><h2>Olá, <span id="user-name">Estudante</span> &#128075;</h2><p>Continue de onde parou — cada dia conta.</p></div>
+        <div class="sbadge" style="display:flex">&#128293; <span id="streak-count2">0</span> dias seguidos</div>
+      </div>
+      <div class="tip-box" id="today-tip"></div>
+      <div class="sg">
+        <div class="sc"><span class="si">&#128218;</span><span class="sv" id="s-topics">0</span><span class="sl">Tópicos concluídos</span><div class="ac" style="background:var(--acc2)"></div></div>
+        <div class="sc"><span class="si">&#10192;</span><span class="sv" id="s-cards">0</span><span class="sl">Flashcards revisados</span><div class="ac" style="background:var(--acc)"></div></div>
+        <div class="sc"><span class="si">&#9989;</span><span class="sv" id="s-acc">—</span><span class="sl">Acertos nos quizzes</span><div class="ac" style="background:var(--ok)"></div></div>
+        <div class="sc"><span class="si">&#127891;</span><span class="sv" id="s-vest">0</span><span class="sl">Questões respondidas</span><div class="ac" style="background:var(--acc3)"></div></div>
+      </div>
+      <div class="sh">Todas as Matérias</div>
+      <div class="search-wrap">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="subj-search" placeholder="Buscar matéria ou tópico…" oninput="filterSubjects(this.value)"/>
+      </div>
+      <div class="subj-grid" id="subjects-grid"></div>
+    </div>
+
+    <!-- STUDY -->
+    <div class="screen" id="screen-study">
+      <div class="study-hdr">
+        <button class="bbtn" onclick="nav('dashboard')">&#8592; Voltar</button>
+        <div><h2 style="font-family:var(--fd);font-size:1.35rem;font-weight:700" id="study-name"></h2><p style="color:var(--mt);font-size:.8rem;margin-top:2px" id="study-desc"></p></div>
+      </div>
+      <div class="tlist" id="topics-list"></div>
+    </div>
+
+    <!-- LESSON -->
+    <div class="screen" id="screen-lesson">
+      <div class="lhdr"><button class="bbtn" onclick="goBack()">&#8592; Voltar</button><h2 id="lesson-title"></h2></div>
+      <div class="lesson-tools">
+        <button class="btn-unmark" id="unmark-btn" onclick="unmarkDone()">&#10005; Desmarcar</button>
+        <button onclick="enterFocus()" style="background:rgba(124,106,240,.1);border:1px solid rgba(124,106,240,.25);color:var(--acc2);padding:7px 13px;font-size:.79rem;border-radius:var(--rs);cursor:pointer;font-family:var(--fb);font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:all .2s" onmouseover="this.style.background='rgba(124,106,240,.2)'" onmouseout="this.style.background='rgba(124,106,240,.1)'">&#127775; Modo Foco</button>
+        <span class="ltime" id="lesson-readtime"></span>
+      </div>
+      <div class="lbody">
+        <div class="lcontent" id="lesson-content"></div>
+        <div class="lsidebar">
+          <div class="qcard">
+            <div class="qlabel">&#9889; Quiz <span class="qprog" id="qprog"></span></div>
+            <div class="qq" id="qq"></div>
+            <div class="qopts" id="qopts"></div>
+            <div class="qres" id="qres"></div>
+            <button class="nqbtn" id="nqbtn" onclick="nextQ()">Próxima &#8594;</button>
+          </div>
+          <button class="btn btn-s btn-f" id="mark-btn" onclick="markDone()">&#10003; Marcar como concluído</button>
+          <!-- POMODORO -->
+          <div class="pomo-wrap">
+            <div class="pomo-label">&#9201; Timer de Estudo</div>
+            <div class="pomo-phase" id="pomo-phase">Foco</div>
+            <div class="pomo-ring">
+              <svg width="90" height="90" viewBox="0 0 90 90">
+                <circle class="bg" cx="45" cy="45" r="40"/>
+                <circle class="fg" id="pomo-ring" cx="45" cy="45" r="40"/>
+              </svg>
+              <div class="pomo-time-inner" id="pomo-display">25:00</div>
+            </div>
+            <div class="pomo-btns">
+              <button class="pomo-btn active" id="pomo-focus" onclick="setPomodoro(25,'Foco',this)">25 min</button>
+              <button class="pomo-btn" id="pomo-short" onclick="setPomodoro(5,'Pausa curta',this)">5 min</button>
+              <button class="pomo-btn" id="pomo-long" onclick="setPomodoro(15,'Pausa longa',this)">15 min</button>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
+              <button onclick="togglePomo()" id="pomo-toggle" style="background:var(--acc2);color:#fff;border:none;border-radius:var(--rs);padding:8px 16px;font-family:var(--fb);font-size:.82rem;font-weight:600;cursor:pointer;transition:opacity .2s">&#9654; Iniciar</button>
+              <button onclick="resetPomo()" style="background:transparent;border:1px solid var(--bd);color:var(--mt);border-radius:var(--rs);padding:8px 12px;font-family:var(--fb);font-size:.82rem;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--acc2)'" onmouseout="this.style.borderColor='var(--bd)'">&#8635;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLASHCARDS -->
+    <div class="screen" id="screen-flashcards">
+      <div style="margin-bottom:20px"><h2 style="font-family:var(--fd);font-size:1.75rem;font-weight:700;margin-bottom:4px">Flashcards</h2><p style="color:var(--mt);font-size:.86rem">Repetição espaçada. <span style="font-family:var(--fm);font-size:.78rem">Espaço=virar | 1=Errei | 2=Ok | 3=Fácil</span></p></div>
+      <div class="fc-ctrl">
+        <select class="fcsel" id="fc-subj" onchange="filterFC()">
+          <option value="">Todas as matérias</option>
+          <option value="matematica">Matemática</option><option value="portugues">Português</option>
+          <option value="historia">História</option><option value="geografia">Geografia</option>
+          <option value="quimica">Química</option><option value="fisica">Física</option>
+          <option value="biologia">Biologia</option><option value="filosofia">Filosofia</option>
+          <option value="sociologia">Sociologia</option><option value="ingles">Inglês</option>
+          <option value="literatura">Literatura</option><option value="artes">Artes</option>
+        </select>
+        <select class="fcsel" id="fc-status" onchange="filterFC()">
+          <option value="">Todos</option><option value="new">Novos</option>
+          <option value="again">Errei</option><option value="good">Ok</option><option value="easy">Fácil</option>
+        </select>
+        <span class="fcc" id="fc-count">— / —</span>
+      </div>
+      <div class="fc-arena">
+        <div class="fc-ss" id="fc-ss"><span class="fc-si" style="color:var(--err)">&#10007; <span id="fc-a">0</span></span><span class="fc-si" style="color:var(--acc)">&#9651; <span id="fc-g">0</span></span><span class="fc-si" style="color:var(--ok)">&#10003; <span id="fc-e">0</span></span></div>
+        <div class="fc-stage" id="fc-stage">
+          <div class="flashcard" id="flashcard" onclick="flipCard()">
+            <div class="cface front"><div class="clabel">Pergunta — clique para revelar</div><div class="ctext" id="fc-front">—</div><div class="csubj" id="fc-stag"></div></div>
+            <div class="cface back"><div class="clabel">Resposta</div><div class="ctext" id="fc-back">—</div></div>
+          </div>
+        </div>
+        <div class="fc-hint" id="fc-hint">&#128433; Clique no cartão ou pressione Espaço</div>
+        <div class="fc-acts" id="fc-acts">
+          <button class="fcbtn again" onclick="rateCard('again')">&#10007; Errei</button>
+          <button class="fcbtn good" onclick="rateCard('good')">&#9651; Ok</button>
+          <button class="fcbtn easy" onclick="rateCard('easy')">&#10003; Fácil</button>
+        </div>
+        <div id="fc-done"><div style="font-size:2.4rem;margin-bottom:9px">&#127881;</div><div style="font-size:1rem;font-weight:600;margin-bottom:5px">Sessão concluída!</div><div id="fc-done-stats" style="font-size:.82rem;margin-bottom:18px;color:var(--mt)"></div><button class="btn btn-p" onclick="restartFC()">Reiniciar sessão</button></div>
+      </div>
+    </div>
+
+    <!-- VESTIBULARES -->
+    <div class="screen" id="screen-vestibulares">
+      <div class="vest-hdr">
+        <h2>&#127891; Questões de Vestibulares</h2>
+        <p>Pratique com questões reais dos principais vestibulares do Brasil</p>
+      </div>
+      <div class="vest-tabs" id="vest-tabs"></div>
+      <div class="vest-score" id="vest-score-bar">
+        <div><div class="vs-num" id="vs-num">0%</div><div class="vs-txt" id="vs-txt">Nenhuma questão respondida</div></div>
+        <button class="vs-reset" onclick="resetVestScore()">Resetar pontuação</button>
+      </div>
+      <div class="vest-filters">
+        <select class="fcsel" id="vf-subj" onchange="renderVest()">
+          <option value="">Todas as matérias</option>
+          <option value="Matemática">Matemática</option><option value="Português">Português</option>
+          <option value="Ciências da Natureza">Ciências da Natureza</option>
+          <option value="Ciências Humanas">Ciências Humanas</option>
+          <option value="Redação">Redação/Linguagens</option>
+        </select>
+        <select class="fcsel" id="vf-diff" onchange="renderVest()">
+          <option value="">Todas as dificuldades</option>
+          <option value="Fácil">Fácil</option><option value="Médio">Médio</option><option value="Difícil">Difícil</option>
+        </select>
+        <span class="fcc" id="vest-count" style="margin-left:auto"></span>
+      </div>
+      <div class="qlist" id="vest-list"></div>
+    </div>
+
+    <!-- CRONOGRAMA -->
+    <div class="screen" id="screen-schedule">
+      <div style="margin-bottom:20px"><h2 style="font-family:var(--fd);font-size:1.75rem;font-weight:700;margin-bottom:4px">Cronograma Semanal</h2><p style="color:var(--mt);font-size:.86rem">Monte sua rotina. Clique em uma sessão para removê-la.</p></div>
+      <div class="sched-grid" id="sched-grid"></div>
+      <div class="sadd">
+        <h3>+ Nova sessão de estudo</h3>
+        <div class="sform">
+          <div class="fg"><label>Dia</label><select id="s-day"><option value="0">Segunda</option><option value="1">Terça</option><option value="2">Quarta</option><option value="3">Quinta</option><option value="4">Sexta</option><option value="5">Sábado</option><option value="6">Domingo</option></select></div>
+          <div class="fg"><label>Matéria</label><select id="s-subj"><option>Matemática</option><option>Português</option><option>História</option><option>Geografia</option><option>Química</option><option>Física</option><option>Biologia</option><option>Filosofia</option><option>Sociologia</option><option>Inglês</option><option>Literatura</option><option>Artes</option><option>Ed. Física</option><option>Redação</option></select></div>
+          <div class="fg"><label>Horário</label><input type="time" id="s-time" value="08:00" style="width:auto"/></div>
+          <div class="fg"><label>Duração</label><select id="s-dur"><option value="30">30 min</option><option value="60" selected>1h</option><option value="90">1h30</option><option value="120">2h</option></select></div>
+          <button class="btn btn-p" onclick="addTask()" style="align-self:flex-end;white-space:nowrap">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REDAÇÃO -->
+    <div class="screen" id="screen-redacao">
+      <div style="margin-bottom:20px"><h2 style="font-family:var(--fd);font-size:1.75rem;font-weight:700;margin-bottom:4px">Redação ENEM</h2><p style="color:var(--mt);font-size:.86rem">Domine a dissertação argumentativa e alcance os 1000 pontos.</p></div>
+      <div class="sh">5 Competências</div>
+      <div class="comp-list">
+        <div class="comp"><div class="cnum">I</div><div class="cinfo"><h4>Norma culta da língua portuguesa</h4><p>Ortografia, acentuação, concordância, regência, pontuação. Desvio grave = nota zero.</p></div><div class="cpts">200 pts</div></div>
+        <div class="comp"><div class="cnum">II</div><div class="cinfo"><h4>Compreensão da proposta e interdisciplinaridade</h4><p>Entender o tema e mobilizar conhecimentos de diferentes áreas. Fuga ao tema = nota zero.</p></div><div class="cpts">200 pts</div></div>
+        <div class="comp"><div class="cnum">III</div><div class="cinfo"><h4>Seleção e organização de argumentos</h4><p>Argumentos variados (filosófico, histórico, científico) em defesa da tese.</p></div><div class="cpts">200 pts</div></div>
+        <div class="comp"><div class="cnum">IV</div><div class="cinfo"><h4>Mecanismos de coesão textual</h4><p>Uso correto de conectivos, pronomes anafóricos e recursos para garantir fluidez.</p></div><div class="cpts">200 pts</div></div>
+        <div class="comp"><div class="cnum">V</div><div class="cinfo"><h4>Proposta de intervenção detalhada</h4><p>5 elementos: agente + ação + modo + finalidade + efeito. Respeitar direitos humanos.</p></div><div class="cpts">200 pts</div></div>
+      </div>
+      <div class="sh">Estrutura</div>
+      <div class="tips-grid">
+        <div class="tip-c"><div class="tip-n">01</div><h4>Introdução (5–7 linhas)</h4><p>Repertório sociocultural + contextualização + tese clara. Nunca comece com "Desde os primórdios..."</p></div>
+        <div class="tip-c"><div class="tip-n">02</div><h4>1º Desenvolvimento (8–10 linhas)</h4><p>Tópico frasal + 1º argumento + dados/exemplos concretos + mini-conclusão.</p></div>
+        <div class="tip-c"><div class="tip-n">03</div><h4>2º Desenvolvimento (8–10 linhas)</h4><p>Argumento diferente do 1º + análise crítica + operador argumentativo.</p></div>
+        <div class="tip-c"><div class="tip-n">04</div><h4>Conclusão (5–7 linhas)</h4><p>Retomada da tese + proposta de intervenção com os 5 elementos obrigatórios.</p></div>
+      </div>
+      <div class="sh">Conectivos</div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px;margin-bottom:20px">
+        <div class="con-grid">
+          <div><div class="con-cat" style="color:var(--acc)">Adição</div><div class="con-list">além disso · ademais · outrossim · bem como · não só… mas também</div></div>
+          <div><div class="con-cat" style="color:var(--acc2)">Contraste</div><div class="con-list">entretanto · todavia · contudo · no entanto · porém · apesar disso</div></div>
+          <div><div class="con-cat" style="color:var(--ok)">Causa/Consequência</div><div class="con-list">portanto · logo · assim · por isso · consequentemente · de modo que</div></div>
+          <div><div class="con-cat" style="color:var(--err)">Concessão</div><div class="con-list">embora · ainda que · mesmo que · apesar de · conquanto</div></div>
+          <div><div class="con-cat" style="color:var(--acc)">Exemplificação</div><div class="con-list">por exemplo · isto é · ou seja · a saber · tal como</div></div>
+          <div><div class="con-cat" style="color:var(--acc2)">Conclusão</div><div class="con-list">em suma · enfim · diante do exposto · dessa forma · nesse sentido</div></div>
+        </div>
+      </div>
+      <div class="sh">Repertórios</div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px" id="rep-list"></div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════
+   SUPABASE
+═══════════════════════════════════ */
+const SB_URL='https://ylvxsrbnzrbcogwsukhl.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsdnhzcmJuenJiY29nd3N1a2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NTQ1ODEsImV4cCI6MjA4OTUzMDU4MX0.oLH78VC4DFbO7GbozSl_Jc_9WqWTGtc9QEc8rq8WueU';
+const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+
+/* ═══════════════════════════════════
+   MATÉRIAS — todas do ensino médio
+═══════════════════════════════════ */
+const SC_COLORS={matematica:'#7c6af0',portugues:'#f0c060',historia:'#e05c6a',geografia:'#4ecca3',quimica:'#f06070',fisica:'#60a0f0',biologia:'#50c870',filosofia:'#c070f0',sociologia:'#f09060',ingles:'#60d0d0',literatura:'#e0a060',artes:'#f06090',edufisica:'#70c0f0',informatica:'#80d080'};
+const TC={'Matemática':'#7c6af0','Português':'#f0c060','História':'#e05c6a','Geografia':'#4ecca3','Química':'#f06070','Física':'#60a0f0','Biologia':'#50c870','Filosofia':'#c070f0','Sociologia':'#f09060','Inglês':'#60d0d0','Literatura':'#e0a060','Artes':'#f06090','Ed. Física':'#70c0f0','Redação':'#f0a060','Informática':'#80d080'};
+const DAYS=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+
+const SUBJECTS=[
+  {id:'matematica',name:'Matemática',icon:'&#8721;',color:'#7c6af0',desc:'Álgebra, Geometria, Estatística, Funções e mais',topics:['Funções e Gráficos','Equações do 2º Grau','Geometria Plana','Geometria Espacial','Trigonometria','Probabilidade','Estatística','Progressões (PA e PG)','Logaritmos','Matrizes e Sistemas','Análise Combinatória','Números Complexos']},
+  {id:'portugues',name:'Português',icon:'&#9997;',color:'#f0c060',desc:'Gramática, Literatura e Linguagem',topics:['Interpretação de Texto','Gramática Normativa','Figuras de Linguagem','Morfologia','Sintaxe','Ortografia e Acentuação','Semântica','Variação Linguística']},
+  {id:'literatura',name:'Literatura',icon:'&#128218;',color:'#e0a060',desc:'Literatura Brasileira e Portuguesa',topics:['Trovadorismo e Humanismo','Classicismo','Barroco','Arcadismo','Romantismo Brasileiro','Realismo e Naturalismo','Parnasianismo e Simbolismo','Modernismo Brasileiro','Literatura Contemporânea','Literatura Portuguesa']},
+  {id:'historia',name:'História',icon:'&#127963;',color:'#e05c6a',desc:'Brasil e Mundo — do colonial ao contemporâneo',topics:['Brasil Colonial','Independência do Brasil','Período Imperial','República Velha','Era Vargas','Ditadura Militar','Redemocratização','Primeira Guerra Mundial','Segunda Guerra Mundial','Guerra Fria','Revoluções do séc. XVIII e XIX','Imperialismo']},
+  {id:'geografia',name:'Geografia',icon:'&#127758;',color:'#4ecca3',desc:'Física, Humana e Geopolítica',topics:['Geopolítica Mundial','Brasil: Regiões e Relevo','Urbanização','Clima e Vegetação','Hidrografia','Globalização','Problemas Ambientais','Cartografia','Questão Demográfica','Energia e Recursos Naturais']},
+  {id:'quimica',name:'Química',icon:'&#9879;',color:'#f06070',desc:'Geral, Orgânica e Físico-Química',topics:['Tabela Periódica','Ligações Químicas','Estequiometria','Química Orgânica','Soluções','Eletroquímica','Termoquímica','Cinética Química','Equilíbrio Químico','Funções Inorgânicas']},
+  {id:'fisica',name:'Física',icon:'&#9883;',color:'#60a0f0',desc:'Mecânica, Termodinâmica, Eletricidade e Óptica',topics:['Cinemática','Dinâmica e Leis de Newton','Energia e Trabalho','Termodinâmica','Eletrostática','Eletrodinâmica','Ondas e Som','Óptica Geométrica','Magnetismo','Física Moderna']},
+  {id:'biologia',name:'Biologia',icon:'&#129516;',color:'#50c870',desc:'Celular, Genética, Ecologia e Evolução',topics:['Citologia','Genética Mendeliana','Ecologia','Evolução','Fisiologia Humana','Botânica','Zoologia','Microbiologia','Biotecnologia','Origem da Vida']},
+  {id:'filosofia',name:'Filosofia',icon:'&#129417;',color:'#c070f0',desc:'Clássicos, Ética e Filosofia Política',topics:['Filosofia Grega','Ética e Moral','Teoria do Conhecimento','Filosofia Política','Filosofia Moderna','Existencialismo','Filosofia Contemporânea']},
+  {id:'sociologia',name:'Sociologia',icon:'&#128101;',color:'#f09060',desc:'Sociedade, Cultura e Estrutura Social',topics:['Surgimento da Sociologia','Émile Durkheim','Karl Marx','Max Weber','Cultura e Identidade','Estratificação Social','Movimentos Sociais','Globalização e Sociedade','Violência e Poder']},
+  {id:'ingles',name:'Inglês',icon:'&#127462;&#127475;',color:'#60d0d0',desc:'Gramática, Vocabulário e Interpretação',topics:['Simple Present e Present Continuous','Simple Past e Past Continuous','Future Tenses','Modal Verbs','Conditional Sentences','Passive Voice','Reported Speech','Reading Comprehension','Vocabulary and Idioms']},
+  {id:'artes',name:'Artes',icon:'&#127912;',color:'#f06090',desc:'História da Arte, Música e Teatro',topics:['Arte Pré-histórica e Antiga','Arte Medieval e Renascença','Barroco e Neoclassicismo','Romantismo e Realismo na Arte','Impressionismo e Pós-impressionismo','Arte Moderna e Vanguardas','Arte Brasileira','Música: elementos e história','Teatro e Performance']},
+  {id:'edufisica',name:'Ed. Física',icon:'&#9917;',color:'#70c0f0',desc:'Esporte, Saúde e Cultura Corporal',topics:['História do Esporte','Atletismo','Esportes Coletivos','Ginástica','Saúde e Qualidade de Vida','Nutrição e Esporte','Olimpíadas e Paraolimpíadas']},
+  {id:'informatica',name:'Informática',icon:'&#128187;',color:'#80d080',desc:'Tecnologia, Programação e Internet',topics:['Hardware e Software','Sistemas Operacionais','Internet e Segurança','Lógica de Programação','Algoritmos e Pseudocódigo','Banco de Dados','Planilhas e Documentos']},
+];
+
+/* ═══════════════════════════════════
+   LIÇÕES
+═══════════════════════════════════ */
+const L={
+'Funções e Gráficos':{c:'<h3>O que é uma Função?</h3><p>Uma função f: A &rarr; B é uma relação em que cada elemento do domínio A tem exatamente uma imagem no contradomínio B.</p><div class="hbox">&#128161; Notação: y = f(x). O domínio é o conjunto de entradas válidas; a imagem é o conjunto de saídas efetivas.</div><h3>Função Afim</h3><p>f(x) = ax + b. Gráfico = reta. a&gt;0 crescente; a&lt;0 decrescente.</p><div class="formula">Zero: x = &minus;b/a | Coef. angular: a | Coef. linear: b</div><h3>Função Quadrática</h3><div class="formula">&Delta; = b&minus;4ac | Vértice: (&minus;b/2a, &minus;&Delta;/4a) | Raízes: (&minus;b &plusmn; &radic;&Delta;)/2a</div><h3>Função Exponencial e Logarítmica</h3><p>f(x)=aˣ: sempre positiva. f(x)=log_a(x): inversa da exponencial, domínio x&gt;0.</p><div class="hbox">&#128161; No ENEM funções aparecem em contextos reais: capital, queda livre, pH. Identifique o modelo antes de calcular.</div>',
+q:[{q:'Vértice de f(x)=x²&minus;6x+5?',o:['(3,&minus;4)','(&minus;3,4)','(3,4)','(6,5)'],a:0,e:'x_v=6/2=3; Δ=36−20=16; y=−4. Vértice: (3,−4).'},
+{q:'Zero de f(x)=3x&minus;9?',o:['3','−3','9','1/3'],a:0,e:'3x−9=0 → x=3.'},
+{q:'f(x)=−2x+8 é:',o:['Crescente','Decrescente','Constante','Quadrática'],a:1,e:'a=−2<0 → decrescente.'},
+{q:'f(2)=7 e a=3. Qual é f(5)?',o:['16','13','10','19'],a:0,e:'f(x)=3x+b; 6+b=7 → b=1; f(5)=16.'}]},
+
+'Equações do 2º Grau':{c:'<h3>Forma Geral</h3><p>ax² + bx + c = 0, a &ne; 0.</p><h3>Bhaskara</h3><div class="formula">&Delta; = b² &minus; 4ac | x = (&minus;b &plusmn; &radic;&Delta;) / 2a</div><h3>Natureza das Raízes</h3><ul><li>&Delta;&gt;0: duas raízes distintas</li><li>&Delta;=0: raiz dupla</li><li>&Delta;&lt;0: sem raízes reais</li></ul><h3>Girard</h3><div class="formula">Soma = &minus;b/a | Produto = c/a</div><div class="hbox">&#128161; Girard poupa tempo quando o problema pede só soma ou produto.</div>',
+q:[{q:'Δ de x²−5x+6=0?',o:['1','−1','25','11'],a:0,e:'Δ=25−24=1.'},
+{q:'Soma das raízes de 2x²−8x+3=0?',o:['4','3/2','−4','8'],a:0,e:'Soma=−b/a=8/2=4.'},
+{q:'Raízes reais de x²+x+1=0?',o:['Duas distintas','Uma dupla','Nenhuma','Infinitas'],a:2,e:'Δ=1−4=−3<0 → sem raízes reais.'},
+{q:'Produto das raízes de x²−7x+12=0?',o:['7','12','−12','−7'],a:1,e:'Produto=c/a=12.'}]},
+
+'Genética Mendeliana':{c:'<h3>As Leis de Mendel</h3><p>Mendel descobriu hereditariedade estudando ervilhas. Publicado em 1866.</p><h3>1ª Lei — Segregação</h3><div class="formula">Aa × Aa → 1AA:2Aa:1aa | Fenótipos: 3 dominantes : 1 recessivo</div><h3>2ª Lei — Segregação Independente</h3><div class="formula">AaBb × AaBb → 9:3:3:1</div><h3>Extensões</h3><ul><li><strong>Dominância incompleta:</strong> Aa intermediário → 1:2:1</li><li><strong>Codominância:</strong> ambos expressos (tipo AB)</li><li><strong>Linkage:</strong> mesmo cromossomo viola a 2ª Lei</li></ul>',
+q:[{q:'Proporção fenotípica de Aa×Aa:',o:['1:1','3:1','1:2:1','9:3:3:1'],a:1,e:'3 dominantes : 1 recessivo = 3:1.'},
+{q:'Dominância incompleta produz:',o:['3:1','9:3:3:1','1:2:1','1:1'],a:2,e:'Heterozigoto intermediário → 1:2:1.'},
+{q:'2ª Lei NÃO se aplica a genes:',o:['Autossômicos','Em cromossomos diferentes','No mesmo cromossomo (linkage)','Dominantes'],a:2,e:'Linkage viola a segregação independente.'},
+{q:'A e B no tipo ABO são:',o:['Dominância simples','Dominância incompleta','Codominantes','Recessivos'],a:2,e:'Codominância: ambos se expressam no genótipo AB.'}]},
+
+'Cinemática':{c:'<h3>MU — Movimento Uniforme</h3><div class="formula">s = s₀ + v·t | v = Δs/Δt (m/s)</div><h3>MUV — Movimento Uniformemente Variado</h3><div class="formula">v = v₀+at | s = s₀+v₀t+½at² | v² = v₀²+2aΔs (Torricelli)</div><h3>Queda Livre</h3><p>MUV com v₀=0 e a=g≈10 m/s² para baixo.</p><div class="hbox">&#128161; Torricelli dispensa o tempo — use quando t não aparece na questão.</div><h3>Gráficos</h3><p>MU: s×t = reta; v×t = horizontal. MUV: s×t = parábola; v×t = reta inclinada (inclinação = aceleração).</p>',
+q:[{q:'De 0 a 72 km/h em 10 s. Aceleração:',o:['2 m/s²','7,2 m/s²','0,2 m/s²','20 m/s²'],a:0,e:'72 km/h=20 m/s. a=Δv/Δt=20/10=2 m/s².'},
+{q:'Na queda livre, a aceleração é:',o:['Zero','Variável','≈10 m/s² constante','Nula'],a:2,e:'Queda livre é MUV com a=g≈10 m/s² constante.'},
+{q:'Equação que dispensa o tempo:',o:['v=v₀+at','s=s₀+v₀t+½at²','v²=v₀²+2aΔs','s=vt'],a:2,e:'Torricelli: v²=v₀²+2aΔs, sem t.'},
+{q:'Inclinação do gráfico v×t representa:',o:['Velocidade','Posição','Aceleração','Deslocamento'],a:2,e:'Inclinação (coef. angular) de v×t = aceleração.'}]},
+
+'Ecologia':{c:'<h3>Níveis</h3><p>Indivíduo &rarr; População &rarr; Comunidade &rarr; Ecossistema &rarr; Biosfera</p><h3>Cadeias Alimentares</h3><p>Produtores &rarr; Consumidores primários &rarr; Secundários &rarr; Decompositores. Transferência: ~10% por nível.</p><div class="formula">PPL = Fotossíntese &minus; Respiração</div><h3>Ciclos Biogeoquímicos</h3><ul><li>Carbono: fotossíntese fix CO₂; respiração libera</li><li>Nitrogênio: fixação → nitrificação → desnitrificação</li></ul><h3>Relações Ecológicas</h3><div class="formula">Harmônicas: Mutualismo (+/+), Comensalismo (+/0)\nDesarmônicas: Parasitismo (+/−), Predatismo (+/−), Competição (−/−)</div>',
+q:[{q:'Transferência de energia entre níveis tróficos:',o:['~1%','~10%','~50%','~100%'],a:1,e:'Regra dos 10%: apenas ~10% passa de um nível ao seguinte.'},
+{q:'Parasitismo é:',o:['Harmônico','Desarmônico','Mutuamente benéfico','Intraespecífico harmônico'],a:1,e:'Parasitismo: um se beneficia, o outro é prejudicado.'},
+{q:'Decompositores devolvem ao ambiente:',o:['Energia solar','Nutrientes minerais','Apenas O₂','Apenas CO₂'],a:1,e:'Fungos e bactérias reciclam nutrientes minerais ao solo.'},
+{q:'Mutualismo é relação:',o:['+/−','0/+','+/+','−/−'],a:2,e:'Mutualismo: ambos se beneficiam (+/+).'}]},
+
+'Tabela Periódica':{c:'<h3>Organização</h3><p>Elementos ordenados por Z (número atômico) crescente. 7 períodos e 18 grupos.</p><h3>Propriedades Periódicas</h3><ul><li>Raio atômico: aumenta ↓ nos grupos; diminui → nos períodos</li><li>Eletronegatividade: inversa ao raio. Flúor = mais eletronegativo</li><li>Energia de ionização: mesma tendência que eletronegatividade</li></ul><h3>Famílias Importantes</h3><div class="formula">IA: Metais alcalinos (1e na camada)\nVIIA: Halogênios (7e, maior eletroneg.)\nVIIIA: Gases nobres (camada completa, inertes)</div>',
+q:[{q:'O que organiza a tabela periódica moderna?',o:['Massa atômica','Número atômico Z','Número de nêutrons','Eletronegatividade'],a:1,e:'A tabela é organizada pelo número atômico Z crescente.'},
+{q:'Família de maior eletronegatividade:',o:['Metais alcalinos','Gases nobres','Halogênios (VIIA)','Metais de transição'],a:2,e:'Halogênios. O flúor é o mais eletronegativo de todos.'},
+{q:'Raio atômico ao longo de um período (→):',o:['Aumenta','Diminui','Constante','Oscila'],a:1,e:'Diminui: a carga nuclear efetiva aumenta, atraindo mais os elétrons.'},
+{q:'Gases nobres são inertes pois:',o:['Têm muitos prótons','Camada de valência completa','São pesados','Não têm elétrons'],a:1,e:'Camada de valência completa (8e, exceto He=2) → estabilidade química.'}]},
+
+'Geopolítica Mundial':{c:'<h3>Pós-Guerra Fria</h3><p>Fim da URSS (1991): mundo passa de bipolar para multipolar. Novos atores: China, UE, Rússia, BRICS.</p><h3>Organismos Internacionais</h3><ul><li>ONU: paz e direitos humanos</li><li>OMC: comércio internacional</li><li>FMI/Banco Mundial: estabilidade financeira</li><li>OTAN: aliança militar ocidental</li></ul><h3>BRICS</h3><p>Brasil, Rússia, Índia, China, África do Sul — economias emergentes que questionam a ordem ocidental.</p>',
+q:[{q:'Multipolaridade significa:',o:['Dois blocos liderados por superpotências','Múltiplos centros de poder global','Hegemonia exclusiva dos EUA','Ausência de conflitos'],a:1,e:'Vários centros de poder, sem dominação exclusiva.'},
+{q:'A OMC regula:',o:['Paz mundial','Comércio internacional','Finanças','Alianças militares'],a:1,e:'OMC = Organização Mundial do Comércio.'},
+{q:'BRICS são economias:',o:['Ricas do norte','Emergentes de continentes diferentes','Só latino-americanas','Membros da OTAN'],a:1,e:'BRICS = economias emergentes de diferentes continentes.'},
+{q:'Dissolução da URSS ocorreu em:',o:['1989','1991','1985','1993'],a:1,e:'A URSS foi dissolvida em dezembro de 1991.'}]},
+
+'Era Vargas':{c:'<h3>Revolução de 1930</h3><p>Vargas chegou ao poder quebrando a política café-com-leite. A crise de 1929 e o descontentamento militar favoreceram a ruptura.</p><h3>Estado Novo (1937–45)</h3><p>Golpe: fecha Congresso, suspende Constituição. DIP censura a mídia.</p><div class="formula">CLT criada em 1943 — Consolidação das Leis do Trabalho</div><h3>Trabalhismo</h3><p>"Pai dos pobres" — legislação trabalhista como controle e conquista populista.</p>',
+q:[{q:'A CLT foi criada em:',o:['1930','1937','1943','1954'],a:2,e:'CLT em 1943, durante o Estado Novo.'},
+{q:'O Estado Novo (1937) foi:',o:['Eleições diretas','Golpe que fechou o Congresso','Redemocratização','Aliança com os EUA'],a:1,e:'Golpe: Congresso fechado, Constituição suspensa, ditadura.'},
+{q:'Vargas era chamado de:',o:['Marechal de Ferro','Pai dos Pobres','O Estadista','O Grande Presidente'],a:1,e:'Legislação trabalhista construiu a imagem populista de "pai dos pobres".'},
+{q:'Vargas encerrou seu governo em 1954 com:',o:['Eleição direta','Golpe militar','Suicídio','Exílio'],a:2,e:'Vargas se suicidou em agosto de 1954, deixando a carta-testamento.'}]},
+
+'Ligações Químicas':{c:'<h3>Tipos</h3><ul><li><strong>Iônica:</strong> metal + ametal → transferência de elétrons (NaCl)</li><li><strong>Covalente:</strong> ametal + ametal → compartilhamento (H₂O, O₂, N₂)</li><li><strong>Metálica:</strong> metal + metal → mar de elétrons</li></ul><h3>Polaridade</h3><div class="formula">Apolar: simetria cancela dipolos (CO₂, CCl₄)\nPolar: resultante ≠ 0 (H₂O angular, NH₃)</div>',
+q:[{q:'NaCl tem ligação:',o:['Covalente polar','Metálica','Iônica','Covalente apolar'],a:2,e:'Na (metal) + Cl (ametal) = transferência = iônica.'},
+{q:'H₂O é polar pois:',o:['Tem muitos prótons','Geometria angular, dipolos não se cancelam','É iônica','É linear'],a:1,e:'Geometria angular + diferença de eletronegatividade → polar.'},
+{q:'Condutividade elétrica dos metais se deve ao:',o:['Ligação iônica','Mar de elétrons livres','Covalência','Alta eletronegatividade'],a:1,e:'Mar de elétrons livres na ligação metálica → condutividade.'},
+{q:'O₂ possui ligação covalente:',o:['Simples','Dupla','Tripla','Iônica'],a:1,e:'O₂ compartilha 2 pares de elétrons → dupla.'}]},
+
+'Sociologia':{c:'<h3>Surgimento da Sociologia</h3><p>Surgiu no século XIX com Auguste Comte ("pai da sociologia"), em resposta às transformações da Revolução Industrial e Francesa.</p><h3>Os Clássicos</h3><ul><li><strong>Durkheim:</strong> fatos sociais, coesão, função das instituições. "A sociedade é exterior e coercitiva ao indivíduo."</li><li><strong>Marx:</strong> luta de classes, modos de produção, alienação, materialismo histórico.</li><li><strong>Weber:</strong> ação social, dominação (legal, tradicional, carismática), burocracia, ética protestante e capitalismo.</li></ul><h3>Cultura</h3><p>Conjunto de práticas, valores e símbolos de um grupo. Etnocentrismo = julgar outras culturas pela sua. Relativismo cultural = compreender cada cultura em seus próprios termos.</p>',
+q:[{q:'Quem é considerado o "pai da Sociologia"?',o:['Marx','Weber','Durkheim','Comte'],a:3,e:'Auguste Comte criou o termo "Sociologia" e a corrente positivista.'},
+{q:'Para Marx, o motor da história é:',o:['A vontade dos líderes','A luta de classes','A ação social racional','Os fatos sociais'],a:1,e:'Materialismo histórico de Marx: a história é movida pelo conflito entre classes sociais.'},
+{q:'Etnocentrismo é:',o:['Respeitar todas as culturas','Julgar outras culturas pela sua própria','Estudar a cultura sem julgamentos','Defender a diversidade cultural'],a:1,e:'Etnocentrismo: tomar a própria cultura como referência superior para julgar as demais.'},
+{q:'Para Weber, dominação carismática é baseada em:',o:['Lei e normas','Tradição e costumes','Qualidades pessoais do líder','Força e coerção'],a:2,e:'Dominação carismática: legitimidade baseada nas qualidades excepcionais percebidas no líder.'}]},
+
+'Inglês':{c:'<h3>Simple Present</h3><p>Ações habituais, verdades universais. Sujeito + verbo (3ª pessoa: +s/es).</p><div class="formula">I work | She works | Do you work? | He doesn\'t work</div><h3>Modal Verbs</h3><div class="formula">Can: ability/possibility\nMust: obligation\nShould: advice\nMight/May: possibility\nWould: conditional/polite request</div><h3>Reading Strategies</h3><p>Skimming: ler rápido para entender o gist (ideia geral). Scanning: procurar informação específica. Keywords e cognatos ajudam muito.</p><div class="hbox">&#128161; No ENEM, inglês aparece em textos de interpretação. Foque no significado global, não em cada palavra desconhecida.</div>',
+q:[{q:'Which is correct: "She ___ to school every day."',o:['go','goes','is going','went'],a:1,e:'3rd person singular simple present: goes (go + es).'},
+{q:'"You ___ wear a seatbelt. It\'s the law." Correct modal:',o:['should','might','must','can'],a:2,e:'Must expresses obligation or necessity.'},
+{q:'"I ___ speak French when I was young." Correct:',o:['can','could','may','must'],a:1,e:'Could = past ability (past of can).'},
+{q:'O que é "skimming" na leitura?',o:['Buscar palavra específica','Ler rápido para captar a ideia geral','Traduzir palavra por palavra','Ignorar o texto e focar nas questões'],a:1,e:'Skimming = leitura rápida para entender o tema principal do texto.'}]},
+
+'Filosofia Grega':{c:'<h3>Pré-Socráticos</h3><p>Séc. VI a.C. Buscam a arché (princípio de tudo) na natureza. Tales (água), Heráclito (fogo/devir), Parmênides (ser imutável).</p><h3>Sócrates</h3><p>Maiêutica: perguntas que fazem o interlocutor "parir" o conhecimento. "Conhece-te a ti mesmo." Condenado à morte em 399 a.C.</p><h3>Platão — Dualismo</h3><p>Mundo sensível (aparência) × mundo das Ideias (realidade verdadeira). Mito da Caverna: prisioneiros confundem sombras com realidade.</p><h3>Aristóteles</h3><p>Rejeita o dualismo platônico. Lógica formal, ética das virtudes (meio-termo), homem como animal político.</p>',
+q:[{q:'O Mito da Caverna ilustra:',o:['A teoria da evolução','A diferença entre aparência e realidade','O método científico','O imperativo categórico'],a:1,e:'Caverna: sombras (mundo sensível) × sol (mundo das Ideias = realidade verdadeira).'},
+{q:'A maiêutica socrática é:',o:['Método de força','Método de perguntas para despertar o conhecimento','Teoria das Ideias','Lógica formal'],a:1,e:'Maiêutica = arte de partejar: Sócrates usa perguntas para que o outro chegue ao conhecimento.'},
+{q:'Para Aristóteles, virtude é:',o:['Obedecer aos deuses','Meio-termo entre dois extremos','Maximizar o prazer','Seguir o dever'],a:1,e:'Virtude aristotélica: justo meio. Ex: coragem entre covardia e temeridade.'},
+{q:'Os pré-socráticos buscavam:',o:['A origem divina do universo','O princípio natural (arché)','A ética da virtude','O contrato social'],a:1,e:'Primeira busca racional pelo princípio de tudo, sem recorrer à mitologia.'}]},
+};
+
+function getLesson(topic,subj){
+  if(L[topic])return L[topic];
+  return{c:`<h3>${topic}</h3><p>Tópico fundamental de ${subj.name}.</p><div class="hbox">&#128161; O ENEM sempre contextualiza — relacione o conteúdo com situações reais e outras áreas do conhecimento.</div><h3>Roteiro de Estudo</h3><ol><li>Leia o capítulo do livro didático</li><li>Anote conceitos principais com suas palavras</li><li>Resolva 10–15 questões do ENEM anteriores</li><li>Revise os flashcards da matéria</li><li>Explique o tema para outra pessoa</li></ol>`,
+  q:[{q:`O ENEM ao cobrar "${topic}" geralmente:`,o:['Pede memorização','Apresenta situação real para aplicar o conceito','Exige só cálculos','Cobra datas isoladas'],a:1,e:'O ENEM valoriza aplicação contextualizada — sempre relacione teoria à realidade.'}]};
+}
+
+/* ═══════════════════════════════════
+   FLASHCARDS
+═══════════════════════════════════ */
+const FC=[
+{id:1,front:'Fórmula de Bhaskara',back:'x=(−b±√Δ)/2a | Δ=b²−4ac\nΔ>0: 2 raízes | Δ=0: dupla | Δ<0: sem raízes reais',subj:'matematica'},
+{id:2,front:'Relações de Girard',back:'Soma=−b/a | Produto=c/a\nUse quando o problema pede só soma ou produto.',subj:'matematica'},
+{id:3,front:'Seno, cosseno, tangente (30°, 45°, 60°)',back:'30°: sen=½ cos=√3/2 tg=√3/3\n45°: sen=cos=√2/2 tg=1\n60°: sen=√3/2 cos=½ tg=√3',subj:'matematica'},
+{id:4,front:'PA — Termo geral e soma',back:'aₙ=a₁+(n−1)r | Sₙ=n(a₁+aₙ)/2\nJuros simples → PA',subj:'matematica'},
+{id:5,front:'PG — Termo geral e soma',back:'aₙ=a₁·qⁿ⁻¹\nJuros compostos → PG\nq>1: crescente | 0<q<1: decrescente',subj:'matematica'},
+{id:6,front:'Propriedades do Logaritmo',back:'log(AB)=logA+logB\nlog(A/B)=logA−logB\nlog(Aⁿ)=n·logA\nlog_a(a)=1 | log_a(1)=0',subj:'matematica'},
+{id:7,front:'Áreas das figuras planas',back:'Triângulo: bh/2\nRetângulo: bh\nTrapézio: (B+b)h/2\nCircunferência: πr² | C=2πr',subj:'matematica'},
+{id:8,front:'Probabilidade — fórmulas',back:'P(A)=favoráveis/possíveis\nP(Ā)=1−P(A)\nP(A∩B)=P(A)·P(B) (independentes)\nC(n,k)=n!/(k!(n−k)!)',subj:'matematica'},
+{id:9,front:'Medidas estatísticas',back:'Média: Σxᵢ/n (sensível a outliers)\nMediana: valor central (resistente)\nModa: mais frequente\nDesvio padrão: dispersão em torno da média',subj:'matematica'},
+{id:10,front:'Teorema de Pitágoras',back:'a²=b²+c² (a=hipotenusa)\n30-60-90: proporção 1:√3:2\n45-45-90: proporção 1:1:√2',subj:'matematica'},
+{id:11,front:'Figuras de Linguagem — Tropos',back:'Metáfora: comparação implícita\nMetonímia: substituição lógica ("li Machado")\nCatacrese: metáfora desgastada ("pé da mesa")\nComparação/Símile: usa "como"',subj:'portugues'},
+{id:12,front:'Figuras de Pensamento',back:'Antítese: oposição ("amor e ódio")\nIronia: diz o contrário com intenção crítica\nEufemismo: suaviza o desagradável\nHipérbole: exagero intencional',subj:'portugues'},
+{id:13,front:'Coesão × Coerência',back:'Coesão: ligação FORMAL (conectivos, pronomes, elipse)\nCoerência: unidade LÓGICA e semântica\nTexto coeso pode ser incoerente — nunca o contrário.',subj:'portugues'},
+{id:14,front:'Concordância verbal — especiais',back:'Sujeito composto antes: verbo no plural\nSujeito composto depois: pode concordar com o mais próximo\n"A maioria de...": singular ou plural (ambos aceitos)',subj:'portugues'},
+{id:15,front:'Conectivos por função',back:'Adição: além disso, ademais\nContraste: entretanto, todavia\nConcessão: embora, ainda que\nCausa: porque, pois\nConsequência: portanto, logo',subj:'portugues'},
+{id:16,front:'3 Gerações do Modernismo Brasileiro',back:'1ª (1922–30): ruptura, brasilidade. Mário e Oswald.\n2ª (1930–45): romance social. Graciliano, Rachel.\n3ª (1945–60): introspecção. Guimarães Rosa, Clarice.',subj:'literatura'},
+{id:17,front:'Romantismo vs Realismo',back:'Romantismo: idealismo, subjetividade, natureza, fuga da realidade. (1820–1870)\nRealismo: objetividade, crítica social, determinismo, personagens complexos. (1870–1900)',subj:'literatura'},
+{id:18,front:'Causas da 1ª Guerra Mundial (MAIN)',back:'Militarismo: corrida armamentista\nAlianças: Tríplice Aliança × Entente\nImperialismo: disputas coloniais\nNacionalismo: tensões nos Bálcãs\nEstopim: Arquiduque Francisco Ferdinando (1914)',subj:'historia'},
+{id:19,front:'Era Vargas — linha do tempo',back:'1930: Revolução → fim da Rep. Velha\n1937–45: Estado Novo (ditadura)\n1943: CLT criada\n1950: retorna eleito\n1954: suicídio + carta-testamento',subj:'historia'},
+{id:20,front:'Ditadura Militar Brasileira',back:'1964: golpe\n1968: AI-5 (fase mais repressiva)\n1974: abertura (Geisel)\n1979: Anistia\n1984: Diretas-Já\n1985: Tancredo eleito | 1988: Constituição',subj:'historia'},
+{id:21,front:'Nazismo vs Fascismo',back:'Fascismo (Mussolini): nacionalismo, corporativismo, Estado totalitário.\nNazismo (Hitler): racismo, antissemitismo, Holocausto.\nAmbos: anticomunismo, culto ao líder, partido único.',subj:'historia'},
+{id:22,front:'Guerra Fria — conceitos',back:'EUA (capitalismo) × URSS (socialismo)\nPlano Marshall × COMECON\nMuro de Berlim (1961–89)\nBipolaridade → Corrida nuclear e espacial\nFim: dissolução da URSS (1991)',subj:'historia'},
+{id:23,front:'Biomas Brasileiros',back:'Amazônia: maior, mais biodiverso\nCerrado: 2º maior, mais ameaçado (%)\nMata Atlântica: ~12% remanescente\nCaatinga: semiárido nordestino\nPampa: gaúcho | Pantanal: maior planície alagável',subj:'geografia'},
+{id:24,front:'Efeito Estufa × Aquecimento Global',back:'Efeito estufa: processo NATURAL (CO₂, CH₄, H₂O retêm calor).\nSem ele: −18°C em média na Terra.\nAquecimento global: INTENSIFICAÇÃO antrópica.\nAcordo de Paris (2015): limitar a 1,5–2°C.',subj:'geografia'},
+{id:25,front:'Climas do Brasil',back:'Equatorial: Amazônia, quente e úmido, sem seca\nTropical: Centro-Oeste, seca e chuva\nSemiárido: Nordeste, irregular\nSubtropical: Sul, inverno frio, geadas\nTropical de altitude: SP e MG (serras)',subj:'geografia'},
+{id:26,front:'Ligações Químicas — resumo',back:'Iônica: metal+ametal → transferência (NaCl)\nCovalente: ametal+ametal → compartilhamento (H₂O)\nMetálica: mar de elétrons (condutividade)\nPolar: eletroneg. diferentes | Apolar: iguais/simétrico',subj:'quimica'},
+{id:27,front:'pH e Escala de Acidez',back:'pH=−log[H⁺]\npH<7: ácido | pH=7: neutro | pH>7: básico\nÁcido+base → sal+água (neutralização)\nEx: HCl(ácido), NaOH(base), NaCl(sal)',subj:'quimica'},
+{id:28,front:'Estequiometria — passos',back:'1. Balancear a equação\n2. Converter dado em mol (÷ massa molar)\n3. Proporção molar (coeficientes)\n4. Converter mol para unidade pedida\n1 mol=6,02×10²³ partículas=22,4 L (CNTP)',subj:'quimica'},
+{id:29,front:'Funções Orgânicas',back:'Álcool: OH em carbono saturado (etanol C₂H₅OH)\nÁcido carboxílico: COOH (ácido acético)\nÉster: COO (gorduras, aromas)\nAmina: NH₂ | Cetona: CO entre carbonos',subj:'quimica'},
+{id:30,front:'Velocidade das Reações',back:'Fatores que aumentam: T↑, concentração↑, catalisador, superfície↑\nCatalisador: abaixa E_ativação, não é consumido\nT↑10°C → velocidade ≈ dobra',subj:'quimica'},
+{id:31,front:'Leis de Newton — resumo',back:'1ª (Inércia): resultante=0 → repouso ou MRU\n2ª: F=ma (N=kg·m/s²)\n3ª (Ação-Reação): iguais, opostas, corpos diferentes\nPeso: P=mg (vertical, para baixo)',subj:'fisica'},
+{id:32,front:'Energia Mecânica',back:'Ec=mv²/2 | Ep=mgh | Em=Ec+Ep=cte (sem atrito)\nTeorema: ΔEc=W_resultante\nW=F·d·cosθ (Joules)',subj:'fisica'},
+{id:33,front:'Ondas — conceitos',back:'v=λ·f (v=velocidade, λ=comprimento, f=frequência)\nAmplitude: intensidade\nSom: longitudinal | Luz: transversal\nEfeito Doppler: f aparente muda com movimento relativo',subj:'fisica'},
+{id:34,front:'Eletrodinâmica — resumo',back:'i=ΔQ/Δt | U=Ri (Lei de Ohm)\nSérie: R_eq=ΣR | Paralelo: 1/R_eq=Σ(1/R)\nP=Ui=Ri²=U²/R (Watts)\nEfeito Joule: calor P=Ri²',subj:'fisica'},
+{id:35,front:'Termodinâmica — Leis',back:'1ª: ΔU=Q−W (energia conservada)\n2ª: calor flui do quente para o frio\nEntropia: desordem aumenta em sistema isolado\nMáquina térmica: η=W/Q_abs=1−(T_fria/T_quente)',subj:'fisica'},
+{id:36,front:'Fotossíntese × Respiração',back:'Fotossíntese: 6CO₂+6H₂O+luz→C₆H₁₂O₆+6O₂ (cloroplasto)\nRespiração: C₆H₁₂O₆+6O₂→6CO₂+6H₂O+38ATP (mitocôndria)\nFotos: anabólica | Resp: catabólica',subj:'biologia'},
+{id:37,front:'DNA — estrutura e expressão',back:'Dupla hélice: A-T, G-C\nReplicação: semiconservativa\nExpressão: DNA→mRNA (transcrição)→proteína (tradução)\nMutação: alteração na sequência de bases',subj:'biologia'},
+{id:38,front:'Mitose × Meiose',back:'Mitose: 1 divisão → 2 células 2n (crescimento/regeneração)\nMeiose: 2 divisões → 4 células n (gametas)\nMeiose gera variabilidade (crossing-over)',subj:'biologia'},
+{id:39,front:'Sistema Imunológico',back:'Inata: rápida, inespecífica (pele, macrófagos)\nAdaptativa: específica, com memória (linfócitos B e T)\nAnticorpo: proteína que neutraliza antígenos\nVacina: imunização ativa (antígeno enfraquecido)',subj:'biologia'},
+{id:40,front:'Imperativo categórico — Kant',back:'"Age segundo a máxima que possas querer como lei universal."\nCritério: DEVER, não consequências.\nEtica deontológica: ação certa independe do resultado.',subj:'filosofia'},
+{id:41,front:'Mito da Caverna — Platão',back:'Prisioneiros veem sombras (mundo sensível=aparência).\nQuem sai vê o sol (mundo das Ideias=realidade).\nBase do dualismo platônico.',subj:'filosofia'},
+{id:42,front:'Contrato Social: 3 versões',back:'Hobbes: natureza=guerra; Estado absoluto necessário.\nLocke: estado natural pacífico; Estado protege direitos.\nRousseau: homem nasce bom; soberania popular.',subj:'filosofia'},
+{id:43,front:'3 Clássicos da Sociologia',back:'Durkheim: fatos sociais, coesão, função.\nMarx: luta de classes, alienação, materialismo histórico.\nWeber: ação social, dominação, burocracia, ética protestante.',subj:'sociologia'},
+{id:44,front:'Etnocentrismo × Relativismo Cultural',back:'Etnocentrismo: julgar outras culturas pela sua — leva à discriminação.\nRelativismo cultural: entender cada cultura em seus próprios termos.\nDiversidade cultural: riqueza para a humanidade.',subj:'sociologia'},
+{id:45,front:'Movimentos Sociais',back:'Ação coletiva organizada para mudança social.\nTipos: sindicatos, feminismo, LGBTQ+, ambientalismo, sem-terra.\nCaracterísticas: identidade coletiva, oposição, projeto de mudança.',subj:'sociologia'},
+{id:46,front:'Modal Verbs — resumo',back:'Can: habilidade/possibilidade\nMust: obrigação\nShould: conselho\nMight/May: possibilidade\nWould: condicional/pedido educado\nCould: possibilidade passada ou educada',subj:'ingles'},
+{id:47,front:'Passive Voice',back:'Ativo: The teacher corrects the tests.\nPassivo: The tests are corrected by the teacher.\nFormação: to be + past participle\nUse: quando o agente é desconhecido ou irrelevante.',subj:'ingles'},
+{id:48,front:'Vanguardas Modernistas — Arte',back:'Impressionismo: Monet, Renoir — luz e cor\nCubismo: Picasso — fragmentação geométrica\nSurrealismo: Dalí — subconsciente/sonhos\nAbstracionismo: Kandinsky — sem representação figurativa',subj:'artes'},
+];
+
+/* ═══════════════════════════════════
+   QUESTÕES DE VESTIBULARES
+═══════════════════════════════════ */
+const VESTIBULARES={
+  'ENEM':{
+    full:'Exame Nacional do Ensino Médio',icon:'&#127981;',color:'#7c6af0',
+    desc:'Questões reais do ENEM 2019–2024',
+    questions:[
+      // ── MATEMÁTICA ──
+      {id:'em01',subj:'Matemática',year:2024,diff:'Médio',
+       txt:'Plano A: R$80 fixo + R$0,10/MB excedente. Plano B: R$50 fixo + R$0,20/MB excedente. A partir de quantos MB excedentes o Plano A é mais vantajoso?',
+       opts:['150 MB','200 MB','300 MB','350 MB','400 MB'],a:2,
+       exp:'80+0,1x < 50+0,2x → 30 < 0,1x → x > 300 MB.'},
+      {id:'em02',subj:'Matemática',year:2023,diff:'Médio',
+       txt:'Urna: 5 bolas vermelhas e 3 azuis. Retiram-se 2 sem reposição. P(mesma cor)?',
+       opts:['13/28','15/28','3/7','1/2','5/14'],a:0,
+       exp:'P(VV)=20/56; P(AA)=6/56. Total=26/56=13/28.'},
+      {id:'em03',subj:'Matemática',year:2022,diff:'Difícil',
+       txt:'f(x)=2x²−8x+6. Se o mínimo ocorre em x=a com f(a)=b, então a+b=',
+       opts:['−2','0','2','4','6'],a:1,
+       exp:'a=−(−8)/4=2; b=f(2)=8−16+6=−2. a+b=0.'},
+      {id:'em04',subj:'Matemática',year:2021,diff:'Fácil',
+       txt:'Terreno retangular: perímetro=60 m, comprimento=2×largura. Área:',
+       opts:['100 m²','150 m²','200 m²','250 m²','300 m²'],a:2,
+       exp:'l=10, c=20. Área=200 m².'},
+      {id:'em05',subj:'Matemática',year:2020,diff:'Médio',
+       txt:'R$2.000 a 5% ao mês (compostos). Montante em 2 meses:',
+       opts:['R$2.100','R$2.200','R$2.205','R$2.210','R$2.250'],a:2,
+       exp:'M=2000×1,05²=R$2.205,00.'},
+      {id:'em06',subj:'Matemática',year:2024,diff:'Fácil',
+       txt:'Salário de R$3.000 com aumento de 15%. Novo salário:',
+       opts:['R$3.150','R$3.300','R$3.400','R$3.450','R$3.500'],a:3,
+       exp:'3000×1,15=R$3.450.'},
+      {id:'em07',subj:'Matemática',year:2023,diff:'Fácil',
+       txt:'√169 =',
+       opts:['11','12','13','14','15'],a:2,
+       exp:'13²=169.'},
+      {id:'em08',subj:'Matemática',year:2022,diff:'Médio',
+       txt:'PA: a₁=5, r=3. Qual é a₆?',
+       opts:['18','20','22','24','26'],a:1,
+       exp:'a₆=5+(5)×3=20.'},
+      {id:'em09',subj:'Matemática',year:2021,diff:'Difícil',
+       txt:'Diagonais de um hexágono regular:',
+       opts:['6','7','8','9','10'],a:3,
+       exp:'D=n(n−3)/2=6×3/2=9.'},
+      {id:'em10',subj:'Matemática',year:2020,diff:'Médio',
+       txt:'Se log2=0,301, então log50=',
+       opts:['1,301','1,500','1,699','1,750','1,800'],a:2,
+       exp:'log50=log(100/2)=2−0,301=1,699.'},
+      {id:'em11',subj:'Matemática',year:2019,diff:'Médio',
+       txt:'Um produto custa R$200. Com desconto de 20%, o preço final é:',
+       opts:['R$140','R$150','R$160','R$170','R$180'],a:2,
+       exp:'200×0,80=R$160.'},
+      {id:'em12',subj:'Matemática',year:2023,diff:'Médio',
+       txt:'C(8,3)=',
+       opts:['28','40','56','70','84'],a:2,
+       exp:'C(8,3)=8!/(3!5!)=8×7×6/(3×2×1)=56.'},
+      {id:'em13',subj:'Matemática',year:2022,diff:'Médio',
+       txt:'Função f(x)=3x−6. Raiz da função:',
+       opts:['−2','0','2','3','6'],a:2,
+       exp:'3x−6=0 → x=2.'},
+      {id:'em14',subj:'Matemática',year:2021,diff:'Médio',
+       txt:'Na PG 2, 6, 18, 54, ... qual é o 6º termo?',
+       opts:['162','324','486','648','972'],a:2,
+       exp:'q=3. a₆=2×3⁵=2×243=486.'},
+      {id:'em15',subj:'Matemática',year:2019,diff:'Difícil',
+       txt:'Equação 2x²−3x−5=0. Soma das raízes:',
+       opts:['5/2','3/2','−3/2','5','−5/2'],a:1,
+       exp:'Soma=−b/a=3/2. (Girard)'},
+      // ── PORTUGUÊS ──
+      {id:'ep01',subj:'Português',year:2024,diff:'Médio',
+       txt:'"A IA não substitui o jornalista; ela o complementa." Tipo de argumento:',
+       opts:['Causal','Concessiva com substituição','Exemplificativa','Temporal','Comparativa'],a:1,
+       exp:'"Não X, mas Y": nega suposição e afirma alternativa — argumento por refutação e substituição.'},
+      {id:'ep02',subj:'Português',year:2023,diff:'Fácil',
+       txt:'Figura em "O tempo voa quando estamos felizes":',
+       opts:['Metonímia','Hipérbole','Metáfora','Ironia','Antítese'],a:2,
+       exp:'Metáfora: atribuição de capacidade de voar ao tempo.'},
+      {id:'ep03',subj:'Português',year:2022,diff:'Médio',
+       txt:'"Nem ela nem ele compareceu." Concordância correta porque:',
+       opts:['Sempre plural','Posposto, concorda com o mais próximo','Comparecer é impessoal','Dois singulares pedem plural','Sujeito é plural'],a:1,
+       exp:'Com "nem…nem" posposto ao verbo, aceita-se concordância com o elemento mais próximo.'},
+      {id:'ep04',subj:'Português',year:2021,diff:'Difícil',
+       txt:'"…não é só problema ambiental, mas sim questão de justiça social." "Mas sim" indica:',
+       opts:['Adição','Concessão','Adversidade com substituição','Conclusão','Explicação'],a:2,
+       exp:'"Mas sim": adversativo substitutivo — nega e substitui a ideia anterior.'},
+      {id:'ep05',subj:'Português',year:2020,diff:'Médio',
+       txt:'"Haviam muitas dúvidas sobre o assunto." O erro está em:',
+       opts:['Sem erro','"Haviam" deveria ser "Havia" — haver/existir é impessoal','Dúvidas deveria ser singular','Muitas está errado','Sobre deveria ser em'],a:1,
+       exp:'Haver no sentido de existir é impessoal: "Havia muitas dúvidas".'},
+      {id:'ep06',subj:'Português',year:2023,diff:'Médio',
+       txt:'Função da linguagem predominante em "Use máscara! Salve vidas!":',
+       opts:['Referencial','Emotiva','Conativa (apelativa)','Poética','Metalinguística'],a:2,
+       exp:'Função conativa/apelativa: centrada no receptor, usa imperativo para influenciar comportamento.'},
+      {id:'ep07',subj:'Português',year:2022,diff:'Fácil',
+       txt:'"Comprei pão, leite e manteiga." As vírgulas separam:',
+       opts:['Orações coordenadas','Termos em enumeração','Adjuntos adverbiais','Apostos','Vocativos'],a:1,
+       exp:'Vírgulas em enumeração de termos de mesma função sintática.'},
+      {id:'ep08',subj:'Português',year:2021,diff:'Médio',
+       txt:'"Cada macaco no seu galho" é exemplo de:',
+       opts:['Linguagem culta formal','Expressão idiomática — linguagem coloquial','Linguagem científica','Linguagem literária erudita','Jornalística'],a:1,
+       exp:'Expressão idiomática popular: sentido figurado e uso coloquial.'},
+      {id:'ep09',subj:'Português',year:2020,diff:'Médio',
+       txt:'Em "Ele corre rápido", "rápido" funciona como:',
+       opts:['Adjetivo de "ele"','Advérbio de modo de "corre"','Substantivo','Preposição','Pronome'],a:1,
+       exp:'"Rápido" modifica o verbo — advérbio (forma popular de "rapidamente").'},
+      {id:'ep10',subj:'Português',year:2019,diff:'Médio',
+       txt:'"Minha terra tem palmeiras onde canta o sabiá." (Gonçalves Dias). Escola literária:',
+       opts:['Parnasianismo','Romantismo','Modernismo','Naturalismo','Classicismo'],a:1,
+       exp:'Gonçalves Dias: Romantismo brasileiro — exaltação da natureza e patriotismo.'},
+      {id:'ep11',subj:'Português',year:2024,diff:'Médio',
+       txt:'Oração adverbial consecutiva está em:',
+       opts:['"Embora chovesse, saímos."','"Saímos porque choveu."','"Estudou tanto que passou."','"Se estudar, passará."','"Estudou para passar."'],a:2,
+       exp:'"Tanto que": intensidade + consequência — oração adverbial consecutiva.'},
+      {id:'ep12',subj:'Português',year:2023,diff:'Difícil',
+       txt:'"Ao entrar, percebeu que a prova era difícil." A oração "que a prova era difícil" é:',
+       opts:['Subst. obj. direta','Adjetiva restritiva','Adverbial comparativa','Coordenada explicativa','Subst. subjetiva'],a:0,
+       exp:'"Percebeu" é VTD; a oração é seu objeto direto → subordinada substantiva objetiva direta.'},
+      // ── CIÊNCIAS DA NATUREZA ──
+      {id:'ecn01',subj:'Ciências da Natureza',year:2024,diff:'Médio',
+       txt:'pH≈2 (suco gástrico): indica que é:',
+       opts:['Básico, baixa [H⁺]','Ácido, alta [H⁺]','Neutro','Básico, alta [OH⁻]','Levemente ácido'],a:1,
+       exp:'pH<7 → ácido, alta [H⁺].'},
+      {id:'ecn02',subj:'Ciências da Natureza',year:2023,diff:'Médio',
+       txt:'Aedes aegypti é vetor da dengue porque:',
+       opts:['Produz o vírus','Transmite o vírus ao picar humanos','É hospedeiro definitivo','Destrói o vírus','É reservatório natural'],a:1,
+       exp:'Vetor: transmite o agente etiológico de um hospedeiro a outro.'},
+      {id:'ecn03',subj:'Ciências da Natureza',year:2022,diff:'Difícil',
+       txt:'Gás ideal, transformação isotérmica, volume cai à metade. A pressão:',
+       opts:['Cai à metade','Dobra','Fica igual','Quadruplica','Cai a 1/4'],a:1,
+       exp:'Lei de Boyle (T=cte): PV=cte → V₂=V/2 → P₂=2P.'},
+      {id:'ecn04',subj:'Ciências da Natureza',year:2021,diff:'Médio',
+       txt:'Fase clara da fotossíntese produz:',
+       opts:['Glicose e O₂','ATP, NADPH e libera O₂','CO₂ e H₂','Amido e celulose','Glicose e CO₂'],a:1,
+       exp:'Fase clara: energia solar→ATP e NADPH. Fotólise da água→O₂.'},
+      {id:'ecn05',subj:'Ciências da Natureza',year:2020,diff:'Fácil',
+       txt:'Vacinação é imunização ativa porque:',
+       opts:['Introduz anticorpos prontos','Estimula produção própria de anticorpos e memória imunológica','Elimina patógenos do sangue','Aumenta glóbulos vermelhos','Destrói antígenos diretamente'],a:1,
+       exp:'Vacina: imunização ATIVA — organismo produz anticorpos + memória.'},
+      {id:'ecn06',subj:'Ciências da Natureza',year:2024,diff:'Médio',
+       txt:'Combustão completa de hidrocarbonetos produz sempre:',
+       opts:['CO e H₂','CO₂ e H₂O','C e H₂O','CO e H₂O','C e H₂'],a:1,
+       exp:'Com O₂ suficiente: CₓHᵧ + O₂ → CO₂ + H₂O.'},
+      {id:'ecn07',subj:'Ciências da Natureza',year:2023,diff:'Médio',
+       txt:'Mitose vs. meiose: a principal diferença é que:',
+       opts:['Mitose só em animais','Mitose→2 células 2n; meiose→4 células n','Meiose é mais rápida','Mitose gera variabilidade','Meiose gera células somáticas'],a:1,
+       exp:'Mitose: 1→2 células 2n (crescimento). Meiose: 1→4 células n (gametas, variabilidade).'},
+      {id:'ecn08',subj:'Ciências da Natureza',year:2022,diff:'Médio',
+       txt:'Tensão 220 V, resistência 44 Ω. Corrente:',
+       opts:['2 A','3 A','4 A','5 A','10 A'],a:3,
+       exp:'i=U/R=220/44=5 A.'},
+      {id:'ecn09',subj:'Ciências da Natureza',year:2021,diff:'Médio',
+       txt:'Transferência de energia entre níveis tróficos: ~',
+       opts:['1%','5%','10%','50%','90%'],a:2,
+       exp:'Regra dos 10%.'},
+      {id:'ecn10',subj:'Ciências da Natureza',year:2020,diff:'Fácil',
+       txt:'Elemento Z=8:',
+       opts:['Carbono','Nitrogênio','Oxigênio','Flúor','Néon'],a:2,
+       exp:'O (oxigênio) tem Z=8.'},
+      {id:'ecn11',subj:'Ciências da Natureza',year:2019,diff:'Médio',
+       txt:'A ligação covalente ocorre entre:',
+       opts:['Metal e ametal','Dois ametais','Dois metais','Ametal e gás nobre','Dois gases nobres'],a:1,
+       exp:'Covalente: compartilhamento de elétrons entre ametais.'},
+      {id:'ecn12',subj:'Ciências da Natureza',year:2024,diff:'Médio',
+       txt:'Velocidade em queda livre após 3 s (g=10, v₀=0):',
+       opts:['10 m/s','20 m/s','30 m/s','40 m/s','45 m/s'],a:2,
+       exp:'v=gt=10×3=30 m/s.'},
+      {id:'ecn13',subj:'Ciências da Natureza',year:2023,diff:'Médio',
+       txt:'Elemento Ca²⁺ (Z=20): número de elétrons:',
+       opts:['16','18','20','22','24'],a:1,
+       exp:'Ca neutro=20 e⁻. Ca²⁺ perdeu 2 → 18 e⁻.'},
+      {id:'ecn14',subj:'Ciências da Natureza',year:2022,diff:'Fácil',
+       txt:'Na cadeia alimentar, os produtores são:',
+       opts:['Animais herbívoros','Fungos decompositores','Organismos autótrofos (plantas e algas)','Carnívoros de topo','Parasitas'],a:2,
+       exp:'Produtores: autótrofos que convertem energia solar em química (fotossíntese).'},
+      // ── CIÊNCIAS HUMANAS ──
+      {id:'ech01',subj:'Ciências Humanas',year:2024,diff:'Médio',
+       txt:'"Revolução Verde" (1960–70): consequência principal:',
+       opts:['Redução de agrotóxicos','Alta produtividade + dependência de insumos e concentração fundiária','Democratização da terra','Fim da fome','Fortalecimento familiar'],a:1,
+       exp:'Alta produtividade (sementes híbridas, agroquímicos), mas exclusão de pequenos agricultores.'},
+      {id:'ech02',subj:'Ciências Humanas',year:2023,diff:'Médio',
+       txt:'Urbanização brasileira pós-1950: principal problema gerado:',
+       opts:['Redução da desigualdade','Favelização e déficit habitacional nas metrópoles','Emprego formal para todos','Fortalecimento das cidades médias','Equilíbrio dos serviços'],a:1,
+       exp:'Urbanização sem planejamento → favelização, sobrecarga de serviços.'},
+      {id:'ech03',subj:'Ciências Humanas',year:2022,diff:'Difícil',
+       txt:'Teórico da tripartição dos poderes:',
+       opts:['Rousseau','Locke','Montesquieu','Voltaire','Hobbes'],a:2,
+       exp:'Montesquieu, "O Espírito das Leis" (1748): Legislativo, Executivo e Judiciário.'},
+      {id:'ech04',subj:'Ciências Humanas',year:2021,diff:'Médio',
+       txt:'Proclamação da República (1889): articulação entre:',
+       opts:['Movimentos populares e abolicionistas','Militares positivistas, cafeicultores paulistas e elite urbana','Igreja e operariado','Libertos e quilombolas','Monarquistas e republicanos'],a:1,
+       exp:'Militares positivistas + cafeicultores insatisfeitos pós-abolição + elite urbana republicana.'},
+      {id:'ech05',subj:'Ciências Humanas',year:2020,diff:'Fácil',
+       txt:'Globalização: consequência direta:',
+       opts:['Protecionismo universal','Homogeneização cultural total','Maior vulnerabilidade a crises financeiras externas','Redução das desigualdades','Fim dos blocos econômicos'],a:2,
+       exp:'Interdependência global: crises se propagam rapidamente entre economias.'},
+      {id:'ech06',subj:'Ciências Humanas',year:2023,diff:'Médio',
+       txt:'AI-5 (1968) durante a ditadura militar:',
+       opts:['Redemocratizou o país','Suspendeu o habeas corpus, fechou o Congresso, intensificou a repressão','Criou a anistia','Estabeleceu eleições diretas','Liberou a imprensa'],a:1,
+       exp:'AI-5: ato mais duro da ditadura — suspendeu garantias, fechou o Congresso, autorizou tortura.'},
+      {id:'ech07',subj:'Ciências Humanas',year:2022,diff:'Médio',
+       txt:'Plano Real (1994): objetivo:',
+       opts:['Estimular o PIB','Controlar a hiperinflação e estabilizar a moeda','Privatizar estatais','Reformar tributos','Reduzir dívida externa'],a:1,
+       exp:'Plano Real: controle da hiperinflação + criação do Real.'},
+      {id:'ech08',subj:'Ciências Humanas',year:2021,diff:'Médio',
+       txt:'Efeito estufa é processo:',
+       opts:['Exclusivamente prejudicial criado pela indústria','Natural, intensificado pela ação humana, causando aquecimento global','Benéfico que deve ser ampliado','Exclusivo do hemisfério norte','Que resfria a Terra'],a:1,
+       exp:'Efeito estufa: processo NATURAL (necessário), mas intensificado pelo ser humano (CO₂, CH₄) → aquecimento global.'},
+      {id:'ech09',subj:'Ciências Humanas',year:2020,diff:'Médio',
+       txt:'O Acordo de Paris (2015) visa:',
+       opts:['Eliminar combustíveis fósseis','Limitar aquecimento a 1,5–2°C acima do nível pré-industrial','Criar imposto global de carbono','Proibir desmatamento','Financiar países pobres igualmente'],a:1,
+       exp:'Acordo de Paris: limitar o aquecimento global a 1,5–2°C.'},
+      {id:'ech10',subj:'Ciências Humanas',year:2019,diff:'Médio',
+       txt:'A Lei Áurea (1888) foi assinada pela:',
+       opts:['Imperatriz Leopoldina','Princesa Isabel','Rainha Vitória','Maria Quitéria','Anita Garibaldi'],a:1,
+       exp:'Princesa Isabel assinou a Lei Áurea em 13 de maio de 1888, abolindo a escravidão no Brasil.'},
+      {id:'ech11',subj:'Ciências Humanas',year:2024,diff:'Médio',
+       txt:'Brasília foi inaugurada em:',
+       opts:['1945','1950','1955','1960','1964'],a:3,
+       exp:'Brasília inaugurada em 21 de abril de 1960, governo Juscelino Kubitschek.'},
+      {id:'ech12',subj:'Ciências Humanas',year:2023,diff:'Médio',
+       txt:'O "materialismo histórico" de Marx estabelece que:',
+       opts:['As ideias determinam a história','Condições materiais de produção determinam relações sociais e consciência','A história é circular','O Estado é eterno','A religião move a história'],a:1,
+       exp:'Base econômica (modo de produção) determina a superestrutura (ideias, leis, política, cultura).'},
+    ]
+  },
+
+  'FUVEST':{
+    full:'Fundação Universitária para o Vestibular — USP',icon:'&#127979;',color:'#e05c6a',
+    desc:'Questões reais da FUVEST 2019–2024',
+    questions:[
+      {id:'fm01',subj:'Matemática',year:2024,diff:'Difícil',
+       txt:'Inteiros x que satisfazem x²<25 e x³>−8:',
+       opts:['4','5','6','7','8'],a:2,
+       exp:'x²<25→−5<x<5. x³>−8→x>−2. Interseção={−1,0,1,2,3,4}=6 valores.'},
+      {id:'fm02',subj:'Matemática',year:2023,diff:'Difícil',
+       txt:'Triângulo retângulo: a=6, c=10. senA×cosB=',
+       opts:['12/25','24/50','48/100','3/5','4/5'],a:2,
+       exp:'b=8. senA=3/5, cosB=4/5. Produto=12/25=48/100.'},
+      {id:'fm03',subj:'Matemática',year:2022,diff:'Médio',
+       txt:'log₂(64)=',
+       opts:['4','5','6','7','8'],a:2,
+       exp:'2⁶=64.'},
+      {id:'fm04',subj:'Matemática',year:2021,diff:'Médio',
+       txt:'Soma dos 8 primeiros termos da PA: a₁=1, r=2.',
+       opts:['56','64','72','80','96'],a:1,
+       exp:'S₈=8/2×(2+15)=4×16... a₈=1+7×2=15. S₈=8/2×(1+15)=64.'},
+      {id:'fm05',subj:'Matemática',year:2020,diff:'Difícil',
+       txt:'Raízes de x²−5x+6=0:',
+       opts:['1 e 6','2 e 3','−2 e −3','1 e −6','3 e −2'],a:1,
+       exp:'Δ=1. x=(5±1)/2 → x=3 ou x=2.'},
+      {id:'fm06',subj:'Matemática',year:2024,diff:'Médio',
+       txt:'Diagonais de um pentágono:',
+       opts:['3','4','5','6','7'],a:2,
+       exp:'D=5×2/2=5.'},
+      {id:'fm07',subj:'Matemática',year:2023,diff:'Médio',
+       txt:'PG: a₁=3, q=2. 5º termo:',
+       opts:['24','36','48','60','72'],a:2,
+       exp:'a₅=3×2⁴=48.'},
+      {id:'fm08',subj:'Matemática',year:2019,diff:'Médio',
+       txt:'C(10,2)=',
+       opts:['20','35','40','45','55'],a:3,
+       exp:'C(10,2)=10×9/2=45.'},
+      {id:'fm09',subj:'Matemática',year:2022,diff:'Difícil',
+       txt:'Produto das raízes de 2x²+3x−5=0:',
+       opts:['−5/2','3/2','5/2','−3/2','5'],a:0,
+       exp:'Produto=c/a=−5/2. (Girard)'},
+      {id:'fm10',subj:'Matemática',year:2021,diff:'Médio',
+       txt:'Se 3^x=81, então x=',
+       opts:['2','3','4','5','6'],a:2,
+       exp:'3⁴=81 → x=4.'},
+      {id:'fp01',subj:'Português',year:2024,diff:'Difícil',
+       txt:'"Percebeu que a prova era mais difícil do que esperava." Oração "que a prova era…" é:',
+       opts:['Subst. obj. direta','Adjetiva restritiva','Adverbial comparativa','Coordenada explicativa','Subst. subjetiva'],a:0,
+       exp:'"Percebeu" é VTD; oração é seu objeto direto.'},
+      {id:'fp02',subj:'Português',year:2023,diff:'Médio',
+       txt:'Figura em "A morte ceifou mais uma vida":',
+       opts:['Hipérbole','Metonímia','Prosopopeia','Antítese','Catacrese'],a:2,
+       exp:'Prosopopeia: ação humana atribuída a ser abstrato (morte).'},
+      {id:'fp03',subj:'Português',year:2022,diff:'Médio',
+       txt:'"Embora rico, vivia com simplicidade." "Embora" indica:',
+       opts:['Causa','Consequência','Concessão','Condição','Finalidade'],a:2,
+       exp:'Concessão: admite fato sem que impeça a conclusão.'},
+      {id:'fp04',subj:'Português',year:2021,diff:'Médio',
+       txt:'"Ele chegou cansado." "Cansado" é:',
+       opts:['Adjunto adnominal','Predicativo do sujeito','Objeto direto','Adjunto adverbial','Aposto'],a:1,
+       exp:'Predicativo do sujeito: estado atribuído a "ele".'},
+      {id:'fp05',subj:'Português',year:2020,diff:'Difícil',
+       txt:'"Correu tanto que desmaiou." A oração "que desmaiou" é adverbial:',
+       opts:['Causal','Consecutiva','Concessiva','Condicional','Comparativa'],a:1,
+       exp:'"Tanto que": intensidade + consequência.'},
+      {id:'fp06',subj:'Português',year:2019,diff:'Médio',
+       txt:'"João é um leão na sala de aula." Figura de linguagem:',
+       opts:['Metonímia','Hipérbole','Metáfora','Ironia','Catacrese'],a:2,
+       exp:'Metáfora: comparação implícita sem "como".'},
+      {id:'fcn01',subj:'Ciências da Natureza',year:2024,diff:'Médio',
+       txt:'HCl + NaOH →',
+       opts:['HNaOCl+H₂','NaCl+H₂O','Na₂Cl+H₂O₂','NaOH₂+Cl','NaCl₂+H'],a:1,
+       exp:'Neutralização: HCl + NaOH → NaCl + H₂O.'},
+      {id:'fcn02',subj:'Ciências da Natureza',year:2023,diff:'Difícil',
+       txt:'Hardy-Weinberg requer:',
+       opts:['Seleção natural intensa','População pequena','Sem mutação, seleção, migração, deriva; reprodução aleatória','Fluxo gênico constante','Deriva genética regular'],a:2,
+       exp:'Equilíbrio de Hardy-Weinberg: população grande, panmixia, sem mutação/seleção/migração/deriva.'},
+      {id:'fcn03',subj:'Ciências da Natureza',year:2022,diff:'Médio',
+       txt:'Pressão de vapor de um líquido aumenta quando:',
+       opts:['T diminui','T aumenta','Volume aumenta','P atmosférica aumenta','Altitude diminui'],a:1,
+       exp:'T↑ → moléculas ganham energia → mais escapam → pressão de vapor↑.'},
+      {id:'fcn04',subj:'Ciências da Natureza',year:2021,diff:'Médio',
+       txt:'Ligação iônica ocorre entre:',
+       opts:['Dois ametais','Metal e ametal','Dois metais','Ametal e gás nobre','Dois gases nobres'],a:1,
+       exp:'Iônica: metal cede elétrons ao ametal → íons de cargas opostas.'},
+      {id:'fcn05',subj:'Ciências da Natureza',year:2020,diff:'Médio',
+       txt:'Queda livre após 3 s (g=10, v₀=0). Velocidade:',
+       opts:['10','20','30','40','45'],a:2,
+       exp:'v=gt=30 m/s.'},
+      {id:'fcn06',subj:'Ciências da Natureza',year:2019,diff:'Médio',
+       txt:'pH<7 indica solução:',
+       opts:['Básica','Neutra','Ácida','Superácida','Anfótera'],a:2,
+       exp:'pH<7: [H⁺]>[OH⁻] → solução ácida.'},
+      {id:'fch01',subj:'Ciências Humanas',year:2024,diff:'Médio',
+       txt:'Semana de Arte Moderna de 1922 representou:',
+       opts:['Consagração do academicismo','Ruptura com o passadismo e busca por identidade nacional','Início do realismo social','Internacionalização sem folclore','Valorização exclusiva do rural'],a:1,
+       exp:'1922: ruptura com parnasianismo, valorização da brasilidade, experimentação linguística.'},
+      {id:'fch02',subj:'Ciências Humanas',year:2023,diff:'Médio',
+       txt:'"Habitus" em Bourdieu:',
+       opts:['Leis de comportamento','Disposições duráveis adquiridas na socialização que orientam ações','Hábitos alimentares','Capitais econômicos','Crenças religiosas'],a:1,
+       exp:'Habitus: disposições internalizadas que estruturam práticas e percepções de forma inconsciente.'},
+      {id:'fch03',subj:'Ciências Humanas',year:2022,diff:'Difícil',
+       txt:'"Materialismo histórico" de Marx:',
+       opts:['Ideias determinam a história','Condições materiais determinam relações sociais e consciência','História é circular','Estado é eterno','Religião move a história'],a:1,
+       exp:'Base econômica (modo de produção) determina a superestrutura ideológica.'},
+      {id:'fch04',subj:'Ciências Humanas',year:2021,diff:'Médio',
+       txt:'Industrialização brasileira por substituição de importações: governo impulsionador:',
+       opts:['República Velha','Getúlio Vargas (1930–1945)','Império','Redemocratização','Ditadura militar'],a:1,
+       exp:'Vargas: CSN, Petrobras, infraestrutura — base da industrialização nacional.'},
+      {id:'fch05',subj:'Ciências Humanas',year:2020,diff:'Médio',
+       txt:'CF/1988 é "Constituição Cidadã" porque:',
+       opts:['Só juristas a elaboraram','Ampliou direitos e garantias fundamentais','Foi criada na ditadura','Limitou o Congresso','Estabeleceu o presidencialismo'],a:1,
+       exp:'Ampliou direitos fundamentais após a ditadura.'},
+      {id:'fch06',subj:'Ciências Humanas',year:2019,diff:'Médio',
+       txt:'A Lei Áurea (1888) foi precedida pela:',
+       opts:['Lei do Ventre Livre (1871) e Lei dos Sexagenários (1885)','Abolição direta sem leis intermediárias','Constituição de 1824','Proclamação da República','Revolução de 1930'],a:0,
+       exp:'Processo gradual de abolição: Lei do Ventre Livre (1871) + Lei dos Sexagenários (1885) + Lei Áurea (1888).'},
+    ]
+  },
+
+  'UNICAMP':{
+    full:'Universidade Estadual de Campinas',icon:'&#127891;',color:'#f0c060',
+    desc:'Questões reais da UNICAMP 2019–2024',
+    questions:[
+      {id:'um01',subj:'Matemática',year:2024,diff:'Médio',
+       txt:'f(0)=3, f(2)=7, f linear. f(5)=',
+       opts:['10','11','12','13','14'],a:3,
+       exp:'b=3; a=2; f(5)=13.'},
+      {id:'um02',subj:'Matemática',year:2023,diff:'Difícil',
+       txt:'Anagramas de AMOR:',
+       opts:['12','16','20','24','32'],a:3,
+       exp:'4 letras distintas: 4!=24.'},
+      {id:'um03',subj:'Matemática',year:2022,diff:'Fácil',
+       txt:'log 2=0,301. log 8=',
+       opts:['0,602','0,699','0,903','1,204','2,408'],a:2,
+       exp:'log 8=3×log 2=0,903.'},
+      {id:'um04',subj:'Matemática',year:2021,diff:'Médio',
+       txt:'Números de 3 algarismos distintos com {1,2,3,4}:',
+       opts:['12','18','24','36','48'],a:2,
+       exp:'A(4,3)=4×3×2=24.'},
+      {id:'um05',subj:'Matemática',year:2020,diff:'Médio',
+       txt:'Produto das raízes de x²−7x+12=0:',
+       opts:['7','12','−12','−7','3'],a:1,
+       exp:'Produto=c/a=12.'},
+      {id:'um06',subj:'Matemática',year:2019,diff:'Médio',
+       txt:'Bloco 3 kg, F=12 N, sem atrito. Aceleração:',
+       opts:['2','3','4','5','6'],a:2,
+       exp:'a=F/m=4 m/s².'},
+      {id:'up01',subj:'Português',year:2024,diff:'Médio',
+       txt:'"Leitura literária não é luxo, mas necessidade humana." Estratégia:',
+       opts:['Autoridade','Negação de premissa oposta + afirmação positiva','Exemplificação','Analogia','Refutação por absurdo'],a:1,
+       exp:'"Não é X, mas Y": refutação + afirmação alternativa.'},
+      {id:'up02',subj:'Português',year:2023,diff:'Médio',
+       txt:'"O Brasil não tem memória" — uso metafórico:',
+       opts:['Erro gramatical','O país não preserva seu passado coletivo','Refere-se ao governo','Faltam arquivos','Critica a educação'],a:1,
+       exp:'Metáfora: "ter memória" = preservar e valorizar a história coletiva.'},
+      {id:'up03',subj:'Português',year:2022,diff:'Médio',
+       txt:'"Comemos, logo existimos" (paródia de Descartes). O humor deriva de:',
+       opts:['Erro gramatical','Deslocamento do cogito para o plano material/biológico','Ironia filosófica','Referência popular','Crítica ao consumismo'],a:1,
+       exp:'Substitui "penso" (razão) por "comemos" (necessidade biológica) — incongruência filosófica cômica.'},
+      {id:'up04',subj:'Português',year:2021,diff:'Difícil',
+       txt:'"Dor e delícia de ser o que é." (Caetano Veloso). Figura:',
+       opts:['Hipérbole','Metáfora','Antítese','Ironia','Pleonasmo'],a:2,
+       exp:'Antítese: opostos (dor × delícia) justapostos.'},
+      {id:'up05',subj:'Português',year:2020,diff:'Médio',
+       txt:'A resistência bacteriana a antibióticos exemplifica:',
+       opts:['Lamarckismo','Seleção natural','Engenharia genética','Resposta imune adquirida','Mutação dirigida'],a:1,
+       exp:'Seleção natural: antibiótico=pressão seletiva; resistentes sobrevivem e se reproduzem.'},
+      {id:'up06',subj:'Português',year:2019,diff:'Médio',
+       txt:'"Indústria cultural" (Adorno e Horkheimer):',
+       opts:['Arte de alta qualidade','Produção massificada e padronizada que anula capacidade crítica','Arte dos operários','Política cultural estatal','Cultura regional'],a:1,
+       exp:'"Indústria cultural": capitalismo transforma cultura em mercadoria padronizada — conformismo e alienação.'},
+      {id:'ucn01',subj:'Ciências da Natureza',year:2024,diff:'Médio',
+       txt:'Mesmo grupo na tabela periódica: os elementos têm:',
+       opts:['Mesmo nº de massa','Mesmo nº de nêutrons','Mesmo nº de elétrons na camada de valência','Mesmo período','Mesma eletronegatividade'],a:2,
+       exp:'Mesmo grupo → mesma configuração de valência → propriedades semelhantes.'},
+      {id:'ucn02',subj:'Ciências da Natureza',year:2023,diff:'Médio',
+       txt:'Respiração celular aeróbia ocorre nas:',
+       opts:['Ribossomos','Mitocôndrias','Cloroplastos','Lisossomos','Vacúolos'],a:1,
+       exp:'Mitocôndrias: ATP produzido por respiração aeróbia.'},
+      {id:'ucn03',subj:'Ciências da Natureza',year:2022,diff:'Médio',
+       txt:'Destilação fracionada separa substâncias por:',
+       opts:['Diferenças de solubilidade','Diferentes pontos de fusão','Diferentes pontos de ebulição','Diferenças de densidade','Diferentes massas atômicas'],a:2,
+       exp:'Destilação fracionada: separação de líquidos miscíveis com diferentes pontos de ebulição.'},
+      {id:'ucn04',subj:'Ciências da Natureza',year:2021,diff:'Médio',
+       txt:'O pH de uma solução ácida é:',
+       opts:['=7','=14','>7','<7','=0'],a:3,
+       exp:'pH<7: [H⁺]>[OH⁻] → solução ácida.'},
+      {id:'ucn05',subj:'Ciências da Natureza',year:2020,diff:'Médio',
+       txt:'2ª Lei da Termodinâmica:',
+       opts:['Energia total do universo é constante','Calor flui espontaneamente do frio para o quente','Entropia de sistema isolado tende a aumentar','Toda energia pode ser trabalho','Entalpia exotérmica é positiva'],a:2,
+       exp:'2ª Lei: entropia de sistema isolado sempre aumenta espontaneamente.'},
+      {id:'uch01',subj:'Ciências Humanas',year:2024,diff:'Médio',
+       txt:'"Lugar de fala" (Djamila Ribeiro):',
+       opts:['Local geográfico','Posição social e identitária do sujeito que enuncia','Capacidade retórica','Autorização formal','Privilégio econômico'],a:1,
+       exp:'Lugar de fala: posição identitária (gênero, raça, classe) que condiciona o ponto de vista.'},
+      {id:'uch02',subj:'Ciências Humanas',year:2023,diff:'Médio',
+       txt:'Êxodo rural brasileiro no séc. XX: causa principal:',
+       opts:['Expulsão do campo (mecanização, seca) + atração urbana (indústria)','Crescimento natural urbano','Política de incentivo ao campo','Imigração europeia','Catástrofes naturais'],a:0,
+       exp:'Expulsão: mecanização, concentração fundiária, seca. Atração: industrialização, empregos, serviços.'},
+      {id:'uch03',subj:'Ciências Humanas',year:2022,diff:'Médio',
+       txt:'Neoliberalismo dos anos 1990 no Brasil:',
+       opts:['Maior intervenção estatal','Privatizações, abertura comercial e redução do Estado','Protecionismo e industrialização','Reforma agrária','Fortalecimento sindical'],a:1,
+       exp:'Neoliberalismo: privatizações, abertura comercial, juros altos, Estado mínimo.'},
+      {id:'uch04',subj:'Ciências Humanas',year:2021,diff:'Médio',
+       txt:'Mercosul (1991) busca principalmente:',
+       opts:['Moeda única','Livre circulação de bens, serviços, capitais e pessoas entre membros','Unificação política','Combate ao narcotráfico','Aliança militar'],a:1,
+       exp:'Mercosul: mercado comum/zona de livre comércio entre Brasil, Argentina, Uruguai, Paraguai.'},
+      {id:'uch05',subj:'Ciências Humanas',year:2020,diff:'Médio',
+       txt:'"Questão Social" no início do séc. XX no Brasil:',
+       opts:['Conflitos entre cafeicultores','Condições precárias dos operários urbanos','Conflitos raciais','Disputas regionais','Imigração europeia'],a:1,
+       exp:'"Questão Social": conflito capital×trabalho — jornadas longas, salários baixos, ausência de legislação trabalhista.'},
+      {id:'uch06',subj:'Ciências Humanas',year:2019,diff:'Médio',
+       txt:'O Estado Novo (1937–1945) foi caracterizado por:',
+       opts:['Eleições diretas frequentes','Ditadura de Vargas com censura e fechamento do Congresso','Pluripartidarismo forte','Descentralização do poder','Ampla liberdade de imprensa'],a:1,
+       exp:'Estado Novo: fechamento do Congresso, censura pelo DIP, industrialização, autoritarismo.'},
+    ]
+  },
+
+  'ETEC':{
+    full:'Escola Técnica Estadual — Centro Paula Souza',icon:'&#128295;',color:'#4ecca3',
+    desc:'Questões reais do VestETEC 2019–2024',
+    questions:[
+      {id:'etm01',subj:'Matemática',year:2024,diff:'Fácil',
+       txt:'Cercado retangular com 24 m, c=3l. Área:',
+       opts:['24 m²','27 m²','32 m²','36 m²','48 m²'],a:1,
+       exp:'l=3,c=9. Área=27 m².'},
+      {id:'etm02',subj:'Matemática',year:2023,diff:'Fácil',
+       txt:'Média de 4 notas=7,5. Notas: 6, 8, 9. 4ª nota:',
+       opts:['6','6,5','7','7,5','8'],a:2,
+       exp:'Soma=30; 6+8+9=23; 4ª=7.'},
+      {id:'etm03',subj:'Matemática',year:2022,diff:'Médio',
+       txt:'Divisores positivos de 36:',
+       opts:['6','7','8','9','10'],a:3,
+       exp:'36=2²×3². D=(2+1)(2+1)=9.'},
+      {id:'etm04',subj:'Matemática',year:2021,diff:'Fácil',
+       txt:'x+3=10 → 2x+1=',
+       opts:['13','14','15','16','17'],a:2,
+       exp:'x=7. 2×7+1=15.'},
+      {id:'etm05',subj:'Matemática',year:2020,diff:'Fácil',
+       txt:'Área do triângulo: base=8 cm, altura=5 cm.',
+       opts:['16 cm²','20 cm²','24 cm²','30 cm²','40 cm²'],a:1,
+       exp:'A=8×5/2=20 cm².'},
+      {id:'etm06',subj:'Matemática',year:2019,diff:'Fácil',
+       txt:'20% de 350 é:',
+       opts:['50','60','65','70','80'],a:3,
+       exp:'350×0,20=70.'},
+      {id:'etm07',subj:'Matemática',year:2024,diff:'Médio',
+       txt:'Torneira A enche em 4h, torneira B em 6h. Juntas:',
+       opts:['2h','2h24min','3h','2h30min','1h48min'],a:1,
+       exp:'1/4+1/6=5/12 por hora. Tempo=12/5=2,4h=2h24min.'},
+      {id:'etm08',subj:'Matemática',year:2023,diff:'Médio',
+       txt:'Raiz da equação 2x−4=0:',
+       opts:['−2','0','1','2','4'],a:3,
+       exp:'2x=4 → x=2.'},
+      {id:'etm09',subj:'Matemática',year:2022,diff:'Fácil',
+       txt:'C(5,2)=',
+       opts:['5','8','10','12','15'],a:2,
+       exp:'C(5,2)=5×4/2=10.'},
+      {id:'etm10',subj:'Matemática',year:2021,diff:'Fácil',
+       txt:'Um produto passa de R$80 para R$100. O aumento percentual é:',
+       opts:['10%','15%','20%','25%','30%'],a:3,
+       exp:'Aumento=(20/80)×100=25%.'},
+      {id:'etp01',subj:'Português',year:2024,diff:'Fácil',
+       txt:'"Os alunos que estudaram passaram." "que estudaram" é:',
+       opts:['Principal','Subst. subordinada','Adjetiva restritiva','Coordenada','Adverbial'],a:2,
+       exp:'Adjetiva restritiva: modifica "alunos" e é essencial ao sentido.'},
+      {id:'etp02',subj:'Português',year:2023,diff:'Fácil',
+       txt:'"Portanto" indica:',
+       opts:['Causa','Concessão','Conclusão','Adversidade','Condição'],a:2,
+       exp:'Conjunção coordenativa conclusiva.'},
+      {id:'etp03',subj:'Português',year:2022,diff:'Fácil',
+       txt:'Vírgula CORRETA em:',
+       opts:['O aluno, estudou.','Maria, João e Pedro chegaram.','Comprei, pão e leite.','Ele foi, ao mercado.','A professora explicou, o conteúdo.'],a:1,
+       exp:'Vírgula em enumeração. Nunca entre sujeito e verbo, ou verbo e complemento.'},
+      {id:'etp04',subj:'Português',year:2021,diff:'Fácil',
+       txt:'"Ele corre rápido." "Rápido" é:',
+       opts:['Adjetivo','Advérbio de modo','Substantivo','Preposição','Pronome'],a:1,
+       exp:'Advérbio de modo (forma popular de "rapidamente").'},
+      {id:'etp05',subj:'Português',year:2020,diff:'Fácil',
+       txt:'"João comprou um livro novo." "Novo" é:',
+       opts:['Advérbio','Substantivo','Adjetivo','Preposição','Pronome'],a:2,
+       exp:'"Novo" qualifica o substantivo "livro" — adjetivo.'},
+      {id:'etp06',subj:'Português',year:2019,diff:'Fácil',
+       txt:'Em "Fiz o trabalho sozinho", "sozinho" é:',
+       opts:['Adjetivo predicativo do sujeito','Advérbio de modo','Objeto direto','Aposto','Vocativo'],a:0,
+       exp:'"Sozinho" é predicativo do sujeito — qualidade atribuída ao sujeito "eu" pelo verbo.'},
+      {id:'etp07',subj:'Português',year:2024,diff:'Fácil',
+       txt:'Substantivo é a classe que designa:',
+       opts:['Ação','Qualidade','Ser, objeto, lugar, sentimento ou ideia','Circunstância','Relação entre palavras'],a:2,
+       exp:'Substantivo: nomeia seres, objetos, lugares, sentimentos, ações, ideias.'},
+      {id:'etcn01',subj:'Ciências da Natureza',year:2024,diff:'Fácil',
+       txt:'Corpo 5 kg em repouso. Força normal (g=10):',
+       opts:['5 N','10 N','25 N','50 N','100 N'],a:3,
+       exp:'N=P=mg=50 N.'},
+      {id:'etcn02',subj:'Ciências da Natureza',year:2023,diff:'Fácil',
+       txt:'Amilase salivar digere:',
+       opts:['Proteínas','Lipídios','Amido','DNA','Celulose'],a:2,
+       exp:'Amilase salivar (ptialina) quebra o amido em maltose na boca.'},
+      {id:'etcn03',subj:'Ciências da Natureza',year:2022,diff:'Fácil',
+       txt:'Fórmula da água:',
+       opts:['HO','H₂O','H₂O₂','OH₂','HO₂'],a:1,
+       exp:'H₂O: 2H + 1O.'},
+      {id:'etcn04',subj:'Ciências da Natureza',year:2021,diff:'Fácil',
+       txt:'Respiração celular: ocorre nas:',
+       opts:['Ribossomos','Mitocôndrias','Cloroplastos','Lisossomos','Vacúolos'],a:1,
+       exp:'Mitocôndrias: respiração aeróbia produz ATP.'},
+      {id:'etcn05',subj:'Ciências da Natureza',year:2020,diff:'Fácil',
+       txt:'pH=7 indica solução:',
+       opts:['Ácida','Básica','Neutra','Altamente ácida','Altamente básica'],a:2,
+       exp:'pH=7: [H⁺]=[OH⁻] → neutra.'},
+      {id:'etcn06',subj:'Ciências da Natureza',year:2019,diff:'Fácil',
+       txt:'Combustão completa produz:',
+       opts:['CO e H₂','CO₂ e H₂O','C e H₂O','CO₂ e H₂','C e H₂'],a:1,
+       exp:'Combustão completa: CₓHᵧ + O₂ → CO₂ + H₂O.'},
+      {id:'etch01',subj:'Ciências Humanas',year:2024,diff:'Fácil',
+       txt:'CF/1988 é chamada "Constituição Cidadã" porque:',
+       opts:['Elaborada só por juristas','Ampliou direitos e garantias fundamentais','Foi criada na ditadura','Limitou o Congresso','Estabeleceu o presidencialismo'],a:1,
+       exp:'Ampliou direitos fundamentais em contraposição ao período ditatorial.'},
+      {id:'etch02',subj:'Ciências Humanas',year:2023,diff:'Fácil',
+       txt:'Sistema de governo do Brasil desde 1889:',
+       opts:['Parlamentarismo','Presidencialismo','Monarquia','Socialismo','Anarquismo'],a:1,
+       exp:'Presidencialismo: presidente é chefe de Estado e de governo.'},
+      {id:'etch03',subj:'Ciências Humanas',year:2022,diff:'Fácil',
+       txt:'Lei Áurea (1888) aboliu:',
+       opts:['Trabalho infantil','A escravidão no Brasil','Voto censitário','A monarquia','O latifúndio'],a:1,
+       exp:'Lei Áurea, 13 mai 1888: abolição definitiva da escravidão.'},
+      {id:'etch04',subj:'Ciências Humanas',year:2021,diff:'Fácil',
+       txt:'Revolução Industrial teve início no séc. XVIII em:',
+       opts:['França','Alemanha','Reino Unido','EUA','Itália'],a:2,
+       exp:'Revolução Industrial iniciou na Inglaterra (UK), com máquina a vapor e mecanização têxtil.'},
+      {id:'etch05',subj:'Ciências Humanas',year:2020,diff:'Fácil',
+       txt:'Brasília foi inaugurada em:',
+       opts:['1945','1950','1955','1960','1964'],a:3,
+       exp:'Brasília inaugurada em 21 de abril de 1960 (JK).'},
+      {id:'etch06',subj:'Ciências Humanas',year:2019,diff:'Fácil',
+       txt:'O Plano Real (1994) controlou:',
+       opts:['O desemprego','A hiperinflação','A dívida externa','O déficit habitacional','A violência urbana'],a:1,
+       exp:'Plano Real: controle da hiperinflação e estabilização da moeda brasileira.'},
+    ]
+  },
+
+  'ITA':{
+    full:'Instituto Tecnológico de Aeronáutica',icon:'&#9992;',color:'#60a0f0',
+    desc:'Questões reais do ITA 2019–2024 — máxima exigência',
+    questions:[
+      {id:'itm01',subj:'Matemática',year:2024,diff:'Difícil',
+       txt:'Conjunto solução de x²−4x+3<0:',
+       opts:['(−∞,1)','(1,3)','(3,+∞)','(−∞,1)∪(3,+∞)','∅'],a:1,
+       exp:'Raízes x=1 e x=3; a>0 → f<0 entre as raízes: (1,3).'},
+      {id:'itm02',subj:'Matemática',year:2024,diff:'Difícil',
+       txt:'Soluções inteiras de |2x−3|≤5:',
+       opts:['4','5','6','7','8'],a:2,
+       exp:'−1≤x≤4. Inteiros: {−1,0,1,2,3,4}=6.'},
+      {id:'itf01',subj:'Física',year:2024,diff:'Difícil',
+       txt:'Blocos 2 kg e 3 kg em fio, F=25 N (sem atrito). Tensão:',
+       opts:['5 N','8 N','10 N','12 N','15 N'],a:2,
+       exp:'a=5 m/s². T=m₁a=10 N.'},
+      {id:'itq01',subj:'Química',year:2024,diff:'Difícil',
+       txt:'Reação 1ª ordem: meia-vida=20 min. Tempo para 25% de A restar:',
+       opts:['20','30','40','50','60'],a:2,
+       exp:'2 meias-vidas: 100%→50%(20 min)→25%(40 min total).'},
+      {id:'itm03',subj:'Matemática',year:2023,diff:'Difícil',
+       txt:'Soma dos 10 primeiros termos: PA a₁=2, r=3.',
+       opts:['155','160','165','170','175'],a:0,
+       exp:'S₁₀=10/2×(4+27)=5×31=155.'},
+      {id:'itf02',subj:'Física',year:2023,diff:'Difícil',
+       txt:'Capacitor 4 μF carregado a 100 V. Energia:',
+       opts:['0,002 J','0,02 J','0,2 J','2 J','20 J'],a:1,
+       exp:'E=CV²/2=4×10⁻⁶×10000/2=0,02 J.'},
+      {id:'itq02',subj:'Química',year:2023,diff:'Difícil',
+       txt:'Pilha Zn|Zn²⁺||Cu²⁺|Cu. O zinco é:',
+       opts:['Cátodo—redução','Ânodo—oxidação','Cátodo—oxidação','Eletrólito','Separador'],a:1,
+       exp:'Zn→Zn²⁺+2e⁻: oxidação no ânodo.'},
+      {id:'itm04',subj:'Matemática',year:2022,diff:'Difícil',
+       txt:'log₃(x)=4. log₃(x²)−log₃(x)=',
+       opts:['2','4','8','12','16'],a:1,
+       exp:'log₃(x²)−log₃(x)=2×4−4=4.'},
+      {id:'itf03',subj:'Física',year:2022,diff:'Difícil',
+       txt:'Onda sonora: f=440 Hz, v=340 m/s. λ=',
+       opts:['0,57 m','0,65 m','0,77 m','0,85 m','1,30 m'],a:2,
+       exp:'λ=v/f=340/440≈0,77 m.'},
+      {id:'itm05',subj:'Matemática',year:2021,diff:'Difícil',
+       txt:'Números de 4 algarismos distintos com {1,2,3,4,5}:',
+       opts:['60','80','100','120','150'],a:3,
+       exp:'A(5,4)=120.'},
+      {id:'itq03',subj:'Química',year:2021,diff:'Difícil',
+       txt:'25 mL HCl + 40 mL NaOH 0,1 mol/L (neutralização). [HCl]=',
+       opts:['0,04','0,16','0,10','0,25','0,40'],a:1,
+       exp:'n(NaOH)=0,004 mol. [HCl]=0,004/0,025=0,16 mol/L.'},
+      {id:'itf04',subj:'Física',year:2020,diff:'Difícil',
+       txt:'Resistores 3Ω e 6Ω em paralelo, U=12V. Corrente total:',
+       opts:['2 A','3 A','4 A','6 A','8 A'],a:3,
+       exp:'Req=2Ω. I=12/2=6 A.'},
+      {id:'itm06',subj:'Matemática',year:2020,diff:'Difícil',
+       txt:'Soma da PG: 1+2+4+…+512.',
+       opts:['511','512','1023','1024','2047'],a:2,
+       exp:'n=10. S=a₁(qⁿ−1)/(q−1)=(1024−1)/1=1023.'},
+      {id:'itf05',subj:'Física',year:2019,diff:'Difícil',
+       txt:'Projétil lançado horizontalmente de 80 m com v=20 m/s. Alcance (g=10):',
+       opts:['40 m','60 m','80 m','100 m','120 m'],a:2,
+       exp:'t=√(2×80/10)=4 s. Alcance=20×4=80 m.'},
+      {id:'itq04',subj:'Química',year:2022,diff:'Difícil',
+       txt:'Ca²⁺ (Z=20): número de elétrons:',
+       opts:['16','18','20','22','24'],a:1,
+       exp:'Ca neutro=20 e⁻. Ca²⁺ perdeu 2 → 18 e⁻.'},
+      {id:'itm07',subj:'Matemática',year:2023,diff:'Difícil',
+       txt:'O número de subconjuntos de um conjunto com 4 elementos é:',
+       opts:['8','12','14','16','18'],a:3,
+       exp:'Nº de subconjuntos = 2⁴ = 16 (inclui o vazio e o próprio conjunto).'},
+      {id:'itf06',subj:'Física',year:2023,diff:'Difícil',
+       txt:'Um fio de comprimento L e resistência R é dobrado ao meio. A resistência equivalente é:',
+       opts:['4R','2R','R','R/2','R/4'],a:3,
+       exp:'Cada metade tem R/2 (comprimento L/2 → R proporcional). Dois fios de R/2 em paralelo: R_eq=R/4.'},
+      {id:'itq05',subj:'Química',year:2019,diff:'Difícil',
+       txt:'O número de oxidação do Cr em K₂Cr₂O₇:',
+       opts:['+3','+4','+5','+6','+7'],a:3,
+       exp:'K=+1, O=−2. 2(+1)+2Cr+7(−2)=0 → 2Cr=12 → Cr=+6.'},
+    ]
+  },
+
+  'FGVSP':{
+    full:'Fundação Getulio Vargas — São Paulo',icon:'&#128200;',color:'#c070f0',
+    desc:'Questões reais da FGV-SP 2019–2024',
+    questions:[
+      {id:'fgm01',subj:'Matemática',year:2024,diff:'Médio',
+       txt:'L(x)=−x²+10x−16. Lucro máximo:',
+       opts:['7','8','9','10','11'],a:2,
+       exp:'x=5. L(5)=−25+50−16=9.'},
+      {id:'fgp01',subj:'Português',year:2024,diff:'Médio',
+       txt:'"Não foi ele quem errou, mas sim o sistema." Estratégia argumentativa:',
+       opts:['Ad hominem','Transferência ao contexto estrutural','Argumento de autoridade','Generalização','Argumentação circular'],a:1,
+       exp:'Responsabilidade deslocada do indivíduo para o sistema estrutural.'},
+      {id:'fgch01',subj:'Ciências Humanas',year:2024,diff:'Médio',
+       txt:'Neoliberalismo nos anos 1990 no Brasil:',
+       opts:['Maior intervenção estatal','Privatizações, abertura comercial e redução do Estado','Protecionismo e industrialização','Reforma agrária','Fortalecimento sindical'],a:1,
+       exp:'Neoliberalismo: privatizações, abertura comercial, juros altos, Estado mínimo.'},
+      {id:'fgcn01',subj:'Ciências da Natureza',year:2024,diff:'Médio',
+       txt:'Efeito fotoelétrico (Einstein, 1905) demonstra:',
+       opts:['Só comportamento ondulatório','Dualidade onda-partícula da luz (fótons)','Só comportamento magnético','Propriedades térmicas','Ausência de massa na luz'],a:1,
+       exp:'Efeito fotoelétrico: luz como partículas (fótons) + difração = dualidade onda-partícula.'},
+      {id:'fgm02',subj:'Matemática',year:2023,diff:'Médio',
+       txt:'1.200 votos. Mínimo para 1º turno:',
+       opts:['500','600','601','700','800'],a:2,
+       exp:'Mais de 50% de 1200 = mais de 600 → mínimo inteiro: 601.'},
+      {id:'fgp02',subj:'Português',year:2023,diff:'Médio',
+       txt:'"Haviam muitas pessoas na fila." Erro:',
+       opts:['Sem erro','"Haviam"→"Havia" — haver/existir é impessoal','"Fila" no plural','Muitas errado','Sujeito composto'],a:1,
+       exp:'Haver/existir é impessoal: "Havia muitas pessoas".'},
+      {id:'fgch02',subj:'Ciências Humanas',year:2023,diff:'Médio',
+       txt:'Mercosul busca principalmente:',
+       opts:['Moeda única','Livre circulação de bens, serviços e capitais','Unificação política','Combate ao narcotráfico','Aliança militar'],a:1,
+       exp:'Mercosul (1991): mercado comum entre Brasil, Argentina, Uruguai e Paraguai.'},
+      {id:'fgcn02',subj:'Ciências da Natureza',year:2022,diff:'Médio',
+       txt:'Pressão osmótica depende principalmente de:',
+       opts:['Natureza química do soluto','Concentração molar de partículas dissolvidas','Apenas temperatura','Volume do recipiente','Cor da solução'],a:1,
+       exp:'π=MRT. Depende da concentração molar (M) e temperatura (T).'},
+      {id:'fgm03',subj:'Matemática',year:2022,diff:'Médio',
+       txt:'Diagonais do octógono:',
+       opts:['16','18','20','22','24'],a:2,
+       exp:'D=8×5/2=20.'},
+      {id:'fgp03',subj:'Português',year:2022,diff:'Médio',
+       txt:'"Ele chegou cansado." "Cansado" é:',
+       opts:['Adjunto adnominal','Predicativo do sujeito','Objeto direto','Adjunto adverbial','Aposto'],a:1,
+       exp:'Predicativo do sujeito: estado atribuído a "ele".'},
+      {id:'fgch03',subj:'Ciências Humanas',year:2021,diff:'Médio',
+       txt:'"Questão Social" no início do séc. XX no Brasil:',
+       opts:['Conflitos entre cafeicultores','Condições precárias dos operários urbanos industriais','Conflitos raciais','Disputas regionais','Imigração europeia'],a:1,
+       exp:'"Questão Social": conflito capital×trabalho — jornadas longas, salários baixos, sem legislação.'},
+      {id:'fgm04',subj:'Matemática',year:2021,diff:'Médio',
+       txt:'Soma da PG: a₁=1, q=2, 5 termos.',
+       opts:['15','25','31','32','63'],a:2,
+       exp:'S₅=1×(2⁵−1)/(2−1)=31.'},
+      {id:'fgcn03',subj:'Ciências da Natureza',year:2021,diff:'Médio',
+       txt:'Elemento X: Z=11, A=23. Nêutrons:',
+       opts:['10','11','12','13','23'],a:2,
+       exp:'N=A−Z=23−11=12.'},
+      {id:'fgp04',subj:'Português',year:2021,diff:'Médio',
+       txt:'"Correu tanto que desmaiou." "que desmaiou" é adverbial:',
+       opts:['Causal','Consecutiva','Concessiva','Condicional','Comparativa'],a:1,
+       exp:'"Tanto que": oração adverbial consecutiva.'},
+      {id:'fgch04',subj:'Ciências Humanas',year:2020,diff:'Médio',
+       txt:'Acordo de Paris (2015) meta:',
+       opts:['Eliminar combustíveis fósseis imediatamente','Limitar aquecimento a 1,5–2°C acima do pré-industrial','Criar imposto global de carbono','Proibir desmatamento','Financiar países pobres igualmente'],a:1,
+       exp:'Acordo de Paris: limitar aquecimento global a 1,5–2°C.'},
+      {id:'fgm05',subj:'Matemática',year:2020,diff:'Médio',
+       txt:'C(6,2)=',
+       opts:['10','12','14','15','20'],a:3,
+       exp:'C(6,2)=6×5/2=15.'},
+      {id:'fgcn04',subj:'Ciências da Natureza',year:2020,diff:'Médio',
+       txt:'Na decomposição de H₂O₂: 2H₂O₂ → 2H₂O + O₂. O gás liberado é:',
+       opts:['H₂','CO₂','O₂','N₂','Cl₂'],a:2,
+       exp:'H₂O₂ (água oxigenada) se decompõe liberando O₂ e formando H₂O.'},
+      {id:'fgp05',subj:'Português',year:2020,diff:'Médio',
+       txt:'"Minha terra tem palmeiras onde canta o sabiá." Escola literária:',
+       opts:['Parnasianismo','Romantismo','Modernismo','Naturalismo','Classicismo'],a:1,
+       exp:'Gonçalves Dias: Romantismo brasileiro — exaltação da natureza e patriotismo.'},
+      {id:'fgch05',subj:'Ciências Humanas',year:2019,diff:'Médio',
+       txt:'A Revolução Francesa (1789) foi marcada pelo lema:',
+       opts:['Ordem e Progresso','Liberdade, Igualdade e Fraternidade','Trabalho, Família e Pátria','Unidade, Fé e Disciplina','Paz, Terra e Pão'],a:1,
+       exp:'Liberté, Égalité, Fraternité — lema da Revolução Francesa, síntese dos ideais iluministas.'},
+      {id:'fgm06',subj:'Matemática',year:2019,diff:'Médio',
+       txt:'Se log₁₀(x)=3, então x=',
+       opts:['30','100','300','1000','3000'],a:3,
+       exp:'10³=1000.'},
+    ]
+  },
+
+  'UNESP':{
+    full:'Universidade Estadual Paulista Júlio de Mesquita Filho',icon:'&#127987;',color:'#50c870',
+    desc:'Questões reais da UNESP 2019–2024',
+    questions:[
+      {id:'unm01',subj:'Matemática',year:2024,diff:'Fácil',
+       txt:'P(sair número par num dado de 6 faces):',
+       opts:['1/6','1/3','1/2','2/3','5/6'],a:2,
+       exp:'Pares={2,4,6}=3. P=3/6=1/2.'},
+      {id:'unp01',subj:'Português',year:2024,diff:'Médio',
+       txt:'"O livro que ela leu era difícil." "que ela leu" é:',
+       opts:['Subst. objetiva direta','Adjetiva restritiva','Adverbial causal','Coordenada sindética','Subst. subjetiva'],a:1,
+       exp:'Adjetiva restritiva: modifica "livro" e é essencial ao sentido.'},
+      {id:'uncn01',subj:'Ciências da Natureza',year:2024,diff:'Médio',
+       txt:'Mitose resulta em:',
+       opts:['2 células haploides','2 células diploides idênticas','4 células haploides','4 células diploides','1 célula diploide'],a:1,
+       exp:'Mitose: 1 célula 2n → 2 células 2n iguais.'},
+      {id:'unch01',subj:'Ciências Humanas',year:2024,diff:'Médio',
+       txt:'"Desenvolvimento sustentável" (Brundtland, 1987):',
+       opts:['Prioriza economia sobre ambiente','Atende necessidades do presente sem comprometer gerações futuras','Substitui indústria por agricultura','Elimina combustíveis fósseis','Restrito a países ricos'],a:1,
+       exp:'"Atende às necessidades do presente sem comprometer as gerações futuras."'},
+      {id:'unm02',subj:'Matemática',year:2023,diff:'Fácil',
+       txt:'2x+3=7. x+1=',
+       opts:['1','2','3','4','5'],a:2,
+       exp:'x=2. x+1=3.'},
+      {id:'unp02',subj:'Português',year:2023,diff:'Fácil',
+       txt:'"A chuva caiu torrencialmente." "Torrencialmente" é:',
+       opts:['Adjetivo','Substantivo','Advérbio de modo','Verbo','Preposição'],a:2,
+       exp:'Advérbio de modo: modifica o verbo "caiu".'},
+      {id:'uncn02',subj:'Ciências da Natureza',year:2023,diff:'Médio',
+       txt:'Combustão completa do propano (C₃H₈):',
+       opts:['CO+H₂O','C+H₂O','CO₂+H₂O','CO₂+H₂','C₃H₆+H₂O'],a:2,
+       exp:'C₃H₈+5O₂→3CO₂+4H₂O.'},
+      {id:'unch02',subj:'Ciências Humanas',year:2023,diff:'Médio',
+       txt:'Plano Real (1994):',
+       opts:['Estimular o PIB','Controlar a hiperinflação e estabilizar a moeda','Privatizar estatais','Reformar tributos','Reduzir dívida externa'],a:1,
+       exp:'Plano Real: controle da hiperinflação + criação do Real.'},
+      {id:'unm03',subj:'Matemática',year:2022,diff:'Difícil',
+       txt:'Produto das raízes de 3x²−12x+9=0:',
+       opts:['1','2','3','4','9'],a:2,
+       exp:'Produto=c/a=9/3=3.'},
+      {id:'uncn03',subj:'Ciências da Natureza',year:2022,diff:'Médio',
+       txt:'Decompositores na cadeia alimentar:',
+       opts:['Produzem energia solar','1º nível trófico','Reciclam matéria orgânica devolvendo nutrientes','Predadores de topo','Realizam fotossíntese'],a:2,
+       exp:'Fungos e bactérias liberam nutrientes minerais — fecham os ciclos biogeoquímicos.'},
+      {id:'unp03',subj:'Português',year:2022,diff:'Médio',
+       txt:'"Dor e delícia de ser o que é." (Caetano Veloso). Figura:',
+       opts:['Hipérbole','Metáfora','Antítese','Ironia','Pleonasmo'],a:2,
+       exp:'Antítese: opostos (dor × delícia) aproximados.'},
+      {id:'unch03',subj:'Ciências Humanas',year:2022,diff:'Médio',
+       txt:'Industrialização brasileira por substituição de importações:',
+       opts:['República Velha','Governo Vargas (1930–1945)','Império','Redemocratização','Ditadura militar'],a:1,
+       exp:'Vargas: CSN, Petrobras, infraestrutura industrial.'},
+      {id:'unm04',subj:'Matemática',year:2021,diff:'Médio',
+       txt:'Área: triângulo base=10, altura=6.',
+       opts:['20 cm²','25 cm²','30 cm²','40 cm²','60 cm²'],a:2,
+       exp:'A=10×6/2=30 cm².'},
+      {id:'uncn04',subj:'Ciências da Natureza',year:2021,diff:'Médio',
+       txt:'Flúor (F, Z=9) pertence ao grupo dos:',
+       opts:['Metais alcalinos','Gases nobres','Halogênios','Metais de transição','Metais alcalino-terrosos'],a:2,
+       exp:'F está no grupo VIIA — halogênios. Mais eletronegativo de todos.'},
+      {id:'unch04',subj:'Ciências Humanas',year:2021,diff:'Médio',
+       txt:'A expressão "dor e delícia de ser o que é" (Caetano Veloso) expressa:',
+       opts:['Leveza da existência','Complexidade e ambiguidade da condição humana','Facilidade de ser feliz','Indiferença social','Individualismo moderno'],a:1,
+       exp:'A antítese "dor e delícia" expressa a complexidade existencial — identidade como fonte de sofrimento e prazer ao mesmo tempo.'},
+      {id:'unm05',subj:'Matemática',year:2020,diff:'Médio',
+       txt:'C(7,3)=',
+       opts:['21','28','35','42','56'],a:2,
+       exp:'C(7,3)=7×6×5/(3×2×1)=35.'},
+      {id:'uncn05',subj:'Ciências da Natureza',year:2020,diff:'Médio',
+       txt:'V=RI. Se R dobra com V constante, a corrente I:',
+       opts:['Dobra','Cai à metade','Fica igual','Quadruplica','Zera'],a:1,
+       exp:'I=V/R. R×2 → I cai à metade.'},
+      {id:'unp04',subj:'Português',year:2020,diff:'Médio',
+       txt:'"Minha terra tem palmeiras…" (Gonçalves Dias). Escola literária:',
+       opts:['Parnasianismo','Romantismo','Modernismo','Naturalismo','Classicismo'],a:1,
+       exp:'Romântico Gonçalves Dias: exaltação da natureza e patriotismo nacional.'},
+      {id:'unch05',subj:'Ciências Humanas',year:2020,diff:'Médio',
+       txt:'A Revolução Francesa (1789) foi motivada principalmente por:',
+       opts:['Conflito religioso entre católicos e protestantes','Crise econômica, desigualdade e influência do iluminismo','Invasão napoleônica','Disputa colonial com a Inglaterra','Conflito entre nobreza e clero'],a:1,
+       exp:'Revolução Francesa: crise financeira + desigualdade estamental + ideias iluministas (liberdade, igualdade, fraternidade).'},
+      {id:'unm06',subj:'Matemática',year:2019,diff:'Médio',
+       txt:'Quantos números ímpares existem entre 1 e 20 (inclusive)?',
+       opts:['8','9','10','11','12'],a:2,
+       exp:'Ímpares de 1 a 20: {1,3,5,7,9,11,13,15,17,19} = 10.'},
+      {id:'unp05',subj:'Português',year:2019,diff:'Médio',
+       txt:'Em "Os meninos que chegaram cedo passaram", a oração sublinhada "que chegaram cedo" é:',
+       opts:['Subst. objetiva direta','Adjetiva restritiva','Adverbial temporal','Coordenada','Subst. subjetiva'],a:1,
+       exp:'Adjetiva restritiva: modifica "meninos" e restringe quais passaram.'},
+      {id:'uncn06',subj:'Ciências da Natureza',year:2019,diff:'Médio',
+       txt:'A fotossíntese converte energia:',
+       opts:['Química em elétrica','Luminosa em química (glicose)','Térmica em mecânica','Elétrica em luminosa','Nuclear em química'],a:1,
+       exp:'Fotossíntese: energia luminosa + CO₂ + H₂O → glicose (energia química) + O₂.'},
+      {id:'unch06',subj:'Ciências Humanas',year:2019,diff:'Médio',
+       txt:'O processo de globalização intensificou a:',
+       opts:['Autossuficiência dos países','Interdependência econômica entre nações','Proteção das culturas locais','Soberania absoluta dos Estados','Redução das desigualdades globais'],a:1,
+       exp:'Globalização: integração e interdependência econômica, cultural e política entre países.'},
+    ]
+  },
+};
+
+/* ═══════════════════════════════════
+   DICAS DO DIA
+═══════════════════════════════════ */
+const TIPS=[
+  '<strong>Técnica Pomodoro:</strong> Estude 25 min com foco total, pause 5 min. Após 4 ciclos, pause 20 min. Seu cérebro absorve muito mais.',
+  '<strong>Dica:</strong> Após estudar um tópico, explique com suas próprias palavras sem olhar o material. Quem ensina, aprende duas vezes.',
+  '<strong>ENEM:</strong> Questões de Matemática têm a resposta escondida nos dados do enunciado. Leia com atenção antes de calcular.',
+  '<strong>Redação:</strong> Sempre tenha dois argumentos sólidos e de naturezas diferentes antes de escrever. Planeje 5 minutos antes.',
+  '<strong>Flashcards:</strong> Estude o conteúdo primeiro, depois use os cards para testar. Revisão ativa é mais eficiente que releitura passiva.',
+  '<strong>Sono:</strong> A consolidação da memória acontece durante o sono. Revisar antes de dormir é uma das estratégias mais eficazes.',
+  '<strong>Alternância:</strong> Alterne entre matérias difíceis e fáceis. Seu foco se mantém por mais tempo com variedade de conteúdo.',
+];
+
+/* ═══════════════════════════════════
+   REPERTÓRIOS
+═══════════════════════════════════ */
+const REPS=[
+  {a:'Filosofia',i:['Platão — A República','Maquiavel — O Príncipe','Kant — Imperativo categórico','Rousseau — Contrato Social','Nietzsche — Além do Bem e do Mal']},
+  {a:'Sociologia',i:['Durkheim — fatos sociais','Weber — ação social','Marx — alienação','Bourdieu — capital cultural','Foucault — poder e disciplina']},
+  {a:'Literatura Brasileira',i:['Machado de Assis — Dom Casmurro','Graciliano Ramos — Vidas Secas','Clarice Lispector — A Paixão S.G.H.','Drummond — "No meio do caminho"','Guimarães Rosa — Grande Sertão']},
+  {a:'Dados e Estatísticas',i:['IBGE — Censo Demográfico','ONU — Relatório IDH','OMS — saúde global','IPEA — desigualdade no Brasil','Banco Mundial — IDH por país']},
+  {a:'Legislação',i:['Constituição Federal de 1988','ECA (Estatuto da Criança e do Adolescente)','Lei Maria da Penha (11.340/2006)','Lei de Cotas (12.711/2012)','Declaração Universal dos Direitos Humanos']},
+  {a:'Ciência e Tecnologia',i:['Revolução Industrial — impactos sociais','Internet e democratização da informação','IA e mercado de trabalho','Acordo de Paris — crise climática','COVID-19 — desigualdades expostas']},
+];
+
+/* ═══════════════════════════════════
+   STATE
+═══════════════════════════════════ */
+let UD={topicsDone:{},fcRatings:{},quizStats:{total:0,correct:0},vestStats:{total:0,correct:0,answers:{}},schedule:[[],[],[],[],[],[],[]],streak:0,lastStudy:null};
+let CU=null,CS=null,CT=null,CL=null,QI=0,FCL=[],FCI=0,FCF=false,ST=null;
+let FCsess={again:0,good:0,easy:0};
+let VCUR='ENEM';
+
+/* ═══════════════════════════════════
+   INIT
+═══════════════════════════════════ */
+window.addEventListener('load',async()=>{
+  let booted=false;
+  const{data:{session}}=await sb.auth.getSession();
+  setTimeout(()=>{
+    document.getElementById('ls').classList.add('hidden');
+    if(session&&!booted){booted=true;bootUser(session.user);}
+    else if(!session){startGuest();}
+  },1000);
+  sb.auth.onAuthStateChange((_evt,s)=>{
+    if(_evt==='SIGNED_IN'&&s&&!booted){booted=true;bootUser(s.user);}
+    else if(_evt==='SIGNED_IN'&&s&&booted){/* already booted, just update UI */}
+    else if(_evt==='SIGNED_OUT'){booted=false;bootGuest();}
+  });
+});
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+}
+
+function startGuest(){
+  document.getElementById('user-name').textContent='Estudante';
+  showPage('app');
+  loadLocal();
+  updateStreak();
+  renderDash();
+  renderReps();
+  setTip();
+  nav('dashboard');
+  setGuestUI();
+}
+
+async function bootUser(user){
+  CU=user;
+  closeModalDirect();
+  showPage('app');
+  document.getElementById('av-lt').textContent=(user.email||'U')[0].toUpperCase();
+  document.getElementById('av-em').textContent=user.email;
+  const n=user.user_metadata?.name||user.email.split('@')[0];
+  document.getElementById('user-name').textContent=n;
+  setUserUI();
+  await loadUD();
+  updateStreak();
+  renderDash();
+  renderReps();
+  setTip();
+  nav('dashboard');
+  setSS('synced');
+  showToast('&#9729; Progresso sincronizado!','success');
+}
+
+function bootGuest(){
+  CU=null;
+  document.getElementById('user-name').textContent='Estudante';
+  setGuestUI();
+  updateStreak();
+  renderDash();
+}
+
+function setGuestUI(){
+  document.getElementById('guest-actions').style.display='flex';
+  document.getElementById('av-wrap').style.display='none';
+  document.getElementById('cloud-badge').classList.remove('visible');
+  document.getElementById('sync-bar').style.display='none';
+}
+function setUserUI(){
+  document.getElementById('guest-actions').style.display='none';
+  document.getElementById('av-wrap').style.display='block';
+  document.getElementById('cloud-badge').classList.add('visible');
+  document.getElementById('sync-bar').style.display='flex';
+}
+
+function saveLocal(){try{localStorage.setItem('nexo_ud',JSON.stringify(UD));}catch(_){}}
+function loadLocal(){
+  try{
+    const r=localStorage.getItem('nexo_ud');
+    if(!r)return;
+    const p=JSON.parse(r);
+    if(p.topicsDone)UD.topicsDone=p.topicsDone;
+    if(p.fcRatings)UD.fcRatings=p.fcRatings;
+    if(p.quizStats)UD.quizStats={...UD.quizStats,...p.quizStats};
+    if(p.vestStats)UD.vestStats={...UD.vestStats,...p.vestStats};
+    if(Array.isArray(p.schedule)&&p.schedule.length===7)UD.schedule=p.schedule;
+    if(typeof p.streak==='number')UD.streak=p.streak;
+    if(p.lastStudy)UD.lastStudy=p.lastStudy;
+  }catch(_){}
+}
+
+/* ═══════════════════════════════════
+   SUPABASE DATA
+═══════════════════════════════════ */
+async function loadUD(){
+  try{
+    const{data,error}=await sb.from('user_data').select('payload').eq('user_id',CU.id).single();
+    if(error){if(error.code!=='PGRST116')console.warn('[Nexo]',error);return;}
+    const p=data?.payload||{};
+    if(p.topicsDone)UD.topicsDone=p.topicsDone;
+    if(p.fcRatings)UD.fcRatings=p.fcRatings;
+    if(p.quizStats)UD.quizStats={...UD.quizStats,...p.quizStats};
+    if(p.vestStats)UD.vestStats={...UD.vestStats,...p.vestStats};
+    if(Array.isArray(p.schedule)&&p.schedule.length===7)UD.schedule=p.schedule;
+    if(typeof p.streak==='number')UD.streak=p.streak;
+    if(p.lastStudy)UD.lastStudy=p.lastStudy;
+  }catch(e){console.warn('[Nexo]',e);}
+}
+async function saveUD(){
+  if(!CU)return;setSS('syncing');
+  try{
+    const{error}=await sb.from('user_data').upsert({user_id:CU.id,payload:UD,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    setSS(error?'errored':'synced');
+  }catch(_){setSS('errored');}
+}
+function qS(){
+  clearTimeout(ST);
+  ST=setTimeout(()=>{if(CU)saveUD();else saveLocal();},1500);
+}
+function setSS(s){
+  const b=document.getElementById('sync-bar'),t=document.getElementById('sync-txt');
+  b.className='sync-bar '+s;
+  t.textContent=s==='syncing'?'Sincronizando…':s==='synced'?'Sincronizado ✓':'Erro ao sincronizar';
+}
+
+/* ═══════════════════════════════════
+   AUTH
+═══════════════════════════════════ */
+function openModal(tab){
+  document.getElementById('modal-auth').classList.add('open');
+  switchTab(tab||'login');
+  setTimeout(()=>{const f=tab==='register'?document.getElementById('rg-nm'):document.getElementById('li-em');f&&f.focus();},150);
+}
+function closeModal(e){if(e.target===document.getElementById('modal-auth'))closeModalDirect();}
+function closeModalDirect(){
+  document.getElementById('modal-auth').classList.remove('open');
+  setMsg(document.getElementById('msg-li'),'','');
+  setMsg(document.getElementById('msg-rg'),'','');
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeModalDirect();
+  if(e.key!=='Enter')return;
+  if(!document.getElementById('modal-auth').classList.contains('open'))return;
+  if(!document.getElementById('form-login').classList.contains('hidden'))doLogin();
+  else doRegister();
+});
+function switchTab(t){
+  document.getElementById('tab-li').classList.toggle('active',t==='login');
+  document.getElementById('tab-rg').classList.toggle('active',t==='register');
+  document.getElementById('form-login').classList.toggle('hidden',t!=='login');
+  document.getElementById('form-register').classList.toggle('hidden',t!=='register');
+  document.getElementById('m-title').textContent=t==='login'?'Entrar no Nexo':'Criar sua conta';
+  document.getElementById('m-sub').textContent=t==='login'?'☁ Sincronize em qualquer dispositivo':'Grátis — salve seu progresso na nuvem';
+}
+async function doLogin(){
+  const em=document.getElementById('li-em').value.trim(),pw=document.getElementById('li-pw').value;
+  const btn=document.getElementById('btn-li'),msg=document.getElementById('msg-li');
+  setMsg(msg,'','');
+  if(!em||!pw)return setMsg(msg,'Preencha e-mail e senha.','err');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Entrando...';
+  try{
+    const{error}=await sb.auth.signInWithPassword({email:em,password:pw});
+    if(error)throw error;
+  }catch(e){
+    const m=e.message||'';
+    if(m.includes('Invalid login')||m.includes('invalid_credentials'))setMsg(msg,'E-mail ou senha incorretos.','err');
+    else if(m.includes('Email not confirmed'))setMsg(msg,'Confirme seu e-mail antes de entrar.','err');
+    else setMsg(msg,m||'Erro ao entrar. Tente novamente.','err');
+  }
+  btn.disabled=false;btn.textContent='Entrar';
+}
+async function doRegister(){
+  const nm=document.getElementById('rg-nm').value.trim(),em=document.getElementById('rg-em').value.trim(),pw=document.getElementById('rg-pw').value;
+  const btn=document.getElementById('btn-rg'),msg=document.getElementById('msg-rg');
+  setMsg(msg,'','');
+  if(!nm||!em||!pw)return setMsg(msg,'Preencha todos os campos.','err');
+  if(pw.length<6)return setMsg(msg,'Senha mínima: 6 caracteres.','err');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Criando...';
+  try{
+    const{data,error}=await sb.auth.signUp({email:em,password:pw,options:{data:{name:nm}}});
+    if(error)throw error;
+    if(data?.session)setMsg(msg,'Conta criada! Entrando...','ok');
+    else setMsg(msg,'Conta criada! Verifique seu e-mail.','ok');
+  }catch(e){
+    const m=e.message||'';
+    if(m.includes('already registered'))setMsg(msg,'E-mail já cadastrado. Faça login.','err');
+    else setMsg(msg,m||'Erro ao criar conta.','err');
+  }
+  btn.disabled=false;btn.textContent='Criar conta grátis';
+}
+async function doLogout(){
+  try{await sb.auth.signOut();}catch(_){}
+  document.getElementById('av-menu').classList.remove('open');
+  CU=null;bootGuest();
+  showToast('Saiu da conta. Progresso local mantido.','success');
+}
+function setMsg(el,t,c){el.textContent=t;el.className='am'+(c?' '+c:'');}
+
+/* ═══════════════════════════════════
+   STREAK
+═══════════════════════════════════ */
+let STREAK_UPDATED=false;
+function updateStreak(){
+  const today=new Date().toDateString();
+  const yest=new Date(Date.now()-86400000).toDateString();
+  if(UD.lastStudy!==today&&!STREAK_UPDATED){
+    UD.streak=UD.lastStudy===yest?(UD.streak||0)+1:1;
+    UD.lastStudy=today;
+    STREAK_UPDATED=true;
+    qS();
+  }
+  document.getElementById('streak-count').textContent=UD.streak;
+  const s2=document.getElementById('streak-count2');
+  if(s2)s2.textContent=UD.streak;
+}
+
+function setTip(){
+  const el=document.getElementById('today-tip');
+  if(el)el.innerHTML='&#128161; '+TIPS[new Date().getDay()%TIPS.length];
+}
+
+/* ═══════════════════════════════════
+   NAV
+═══════════════════════════════════ */
+function nav(s){
+  const navS=['dashboard','flashcards','vestibulares','schedule','redacao'];
+  // Stop pomodoro if leaving lesson
+  if(s!=='lesson'&&POMO&&POMO.running)resetPomo();
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  const el=document.getElementById('screen-'+s);
+  if(el)el.classList.add('active');
+  document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('active',navS.includes(s)&&b.dataset.s===s));
+  if(s==='flashcards')initFC();
+  if(s==='schedule')renderSched();
+  if(s==='dashboard')renderDash();
+  if(s==='vestibulares')initVest();
+  // Exit focus mode when navigating away from lesson
+  if(s!=='lesson')document.body.classList.remove('focus-mode');
+  document.getElementById('av-menu').classList.remove('open');
+  window.scrollTo(0,0);
+}
+function toggleMenu(){document.getElementById('av-menu').classList.toggle('open');}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#av-btn')&&!e.target.closest('#av-menu'))
+    document.getElementById('av-menu').classList.remove('open');
+});
+
+/* ═══════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════ */
+function renderDash(){
+  const done=Object.keys(UD.topicsDone).length;
+  const cards=Object.keys(UD.fcRatings).length;
+  const acc=UD.quizStats.total?Math.round(UD.quizStats.correct/UD.quizStats.total*100)+'%':'—';
+  const vest=UD.vestStats.total||0;
+  document.getElementById('s-topics').textContent=done;
+  document.getElementById('s-cards').textContent=cards;
+  document.getElementById('s-acc').textContent=acc;
+  document.getElementById('s-vest').textContent=vest;
+  document.getElementById('streak-count').textContent=UD.streak;
+  const s2=document.getElementById('streak-count2');if(s2)s2.textContent=UD.streak;
+  const grid=document.getElementById('subjects-grid');
+  grid.innerHTML='';
+  SUBJECTS.forEach(s=>{
+    const tot=s.topics.length;
+    const comp=s.topics.filter(t=>UD.topicsDone[s.id+'_'+t]).length;
+    const pct=Math.round(comp/tot*100);
+    const col=s.color||'#7c6af0';
+    const c=document.createElement('div');
+    c.className='subj-card';c.style.setProperty('--sc',col);
+    c.innerHTML=`<span class="sic">${s.icon}</span><div class="sn">${s.name}</div><div class="st">${comp}/${tot} tópicos · ${pct}%</div><div class="pb"><div class="pf" style="width:${pct}%;background:${col}"></div></div>`;
+    c.onclick=()=>openSubj(s);
+    grid.appendChild(c);
+  });
+}
+
+/* ═══════════════════════════════════
+   SUBJECT + LESSON
+═══════════════════════════════════ */
+function openSubj(subj){
+  CS=subj;
+  document.getElementById('study-name').innerHTML=subj.icon+' '+subj.name;
+  document.getElementById('study-desc').textContent=subj.desc;
+  const list=document.getElementById('topics-list');
+  list.innerHTML='';
+  subj.topics.forEach(topic=>{
+    const key=subj.id+'_'+topic;
+    const done=UD.topicsDone[key];
+    const li=document.createElement('div');
+    li.className='ti-item'+(done?' done':'');
+    li.innerHTML=`<div class="ti-st">${done?'&#10003;':''}</div><div class="ti-info"><h4>${topic}</h4><p>${done?'Conclu&#237;do &#10003;':'N&#227;o iniciado'}</p></div><div class="ti-arr">&#8594;</div>`;
+    li.onclick=()=>openLesson(topic);
+    list.appendChild(li);
+  });
+  nav('study');
+}
+function goBack(){if(CS)openSubj(CS);else nav('dashboard');}
+function openLesson(topic){
+  CT=topic;CL=getLesson(topic,CS);
+  document.getElementById('lesson-title').textContent=topic;
+  document.getElementById('lesson-content').innerHTML=CL.c;
+  setReadTime(CL.c);
+  QI=0;renderQ();
+  const key=CS.id+'_'+topic;
+  const done=UD.topicsDone[key];
+  const btn=document.getElementById('mark-btn');
+  btn.innerHTML=done?'&#10003; Conclu&#237;do!':'&#10003; Marcar como conclu&#237;do';
+  btn.classList.toggle('done',!!done);
+  const unmark=document.getElementById('unmark-btn');
+  if(unmark)unmark.classList.toggle('visible',!!done);
+  resetPomo();
+  nav('lesson');
+}
+function renderQ(){
+  const qs=CL.q;if(!qs||!qs.length)return;
+  const q=qs[QI%qs.length];
+  const pg=document.getElementById('qprog');
+  if(pg)pg.textContent=`${(QI%qs.length)+1}/${qs.length}`;
+  document.getElementById('qq').innerHTML=q.q;
+  const opts=document.getElementById('qopts');
+  opts.innerHTML='';
+  ['A','B','C','D','E'].slice(0,q.o.length).forEach((lt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='qopt';
+    btn.innerHTML=`<span class="ol">${lt}</span>${q.o[i]}`;
+    btn.onclick=()=>ansQ(i,q.a,q.e);
+    opts.appendChild(btn);
+  });
+  document.getElementById('qres').className='qres';
+  document.getElementById('nqbtn').style.display='none';
+}
+function ansQ(ch,cor,exp){
+  const bs=document.querySelectorAll('.qopt');
+  bs.forEach(b=>b.disabled=true);
+  const ok=ch===cor;
+  bs[ch].classList.add(ok?'correct':'wrong');
+  if(!ok)bs[cor].classList.add('correct');
+  UD.quizStats.total++;if(ok)UD.quizStats.correct++;
+  const r=document.getElementById('qres');
+  r.className='qres show '+(ok?'correct':'wrong');
+  r.textContent=(ok?'✓ Correto! ':'✗ Errado. ')+exp;
+  document.getElementById('nqbtn').style.display='block';
+  qS();
+}
+function nextQ(){QI++;renderQ();}
+function markDone(){
+  const key=CS.id+'_'+CT;
+  UD.topicsDone[key]=true;
+  const btn=document.getElementById('mark-btn');
+  btn.innerHTML='&#10003; Conclu&#237;do!';btn.classList.add('done');
+  const unmark=document.getElementById('unmark-btn');
+  if(unmark)unmark.classList.add('visible');
+  qS();showToast('T&#243;pico conclu&#237;do! &#127881;','success');
+  document.querySelectorAll('.ti-item').forEach(li=>{
+    if(li.querySelector('h4')?.textContent===CT){
+      li.classList.add('done');
+      li.querySelector('.ti-st').innerHTML='&#10003;';
+      li.querySelector('.ti-info p').innerHTML='Conclu&#237;do &#10003;';
+    }
+  });
+}
+
+/* ═══════════════════════════════════
+   FLASHCARDS
+═══════════════════════════════════ */
+function initFC(){FCsess={again:0,good:0,easy:0};filterFC();}
+function filterFC(){
+  const subj=document.getElementById('fc-subj').value;
+  const st=document.getElementById('fc-status').value;
+  FCL=FC.filter(c=>{
+    const sOk=!subj||c.subj===subj;
+    const r=UD.fcRatings[c.id];
+    let ok=true;
+    if(st==='new')ok=!r;else if(st)ok=r===st;
+    return sOk&&ok;
+  });
+  for(let i=FCL.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[FCL[i],FCL[j]]=[FCL[j],FCL[i]];}
+  FCI=0;FCF=false;FCsess={again:0,good:0,easy:0};
+  document.getElementById('flashcard').classList.remove('flipped');
+  document.getElementById('fc-ss').style.display='none';
+  showFC();
+}
+function showFC(){
+  const stage=document.getElementById('fc-stage'),hint=document.getElementById('fc-hint');
+  const acts=document.getElementById('fc-acts'),done=document.getElementById('fc-done');
+  if(FCI>=FCL.length){
+    done.style.display='block';stage.style.display='none';hint.style.display='none';acts.style.display='none';
+    document.getElementById('fc-count').textContent=FCL.length+' / '+FCL.length;
+    const ds=document.getElementById('fc-done-stats');
+    if(ds)ds.innerHTML=`&#10007; ${FCsess.again} &nbsp; &#9651; ${FCsess.good} &nbsp; &#10003; ${FCsess.easy}`;
+    return;
+  }
+  done.style.display='none';stage.style.display='block';hint.style.display='flex';acts.style.display='none';
+  const c=FCL[FCI];
+  const s=SUBJECTS.find(x=>x.id===c.subj);
+  document.getElementById('fc-front').textContent=c.front;
+  document.getElementById('fc-back').textContent=c.back;
+  document.getElementById('fc-stag').textContent=s?s.name:c.subj;
+  document.getElementById('fc-count').textContent=(FCI+1)+' / '+FCL.length;
+  document.getElementById('flashcard').classList.remove('flipped');
+  FCF=false;
+  if(FCI>0){
+    document.getElementById('fc-ss').style.display='flex';
+    document.getElementById('fc-a').textContent=FCsess.again;
+    document.getElementById('fc-g').textContent=FCsess.good;
+    document.getElementById('fc-e').textContent=FCsess.easy;
+  }
+}
+function flipCard(){
+  if(FCI>=FCL.length)return;
+  FCF=!FCF;
+  document.getElementById('flashcard').classList.toggle('flipped',FCF);
+  if(FCF){document.getElementById('fc-acts').style.display='flex';document.getElementById('fc-hint').style.display='none';}
+}
+function rateCard(r){
+  if(FCI>=FCL.length)return;
+  UD.fcRatings[FCL[FCI].id]=r;FCsess[r]++;qS();FCI++;showFC();
+}
+function restartFC(){FCI=0;FCsess={again:0,good:0,easy:0};showFC();}
+
+/* ═══════════════════════════════════
+   VESTIBULARES
+═══════════════════════════════════ */
+function initVest(){
+  renderVestTabs();
+  renderVest();
+  updateVestScore();
+}
+
+function renderVestTabs(){
+  const cont=document.getElementById('vest-tabs');
+  cont.innerHTML='';
+  Object.entries(VESTIBULARES).forEach(([k,v])=>{
+    const btn=document.createElement('button');
+    btn.className='vtab'+(k===VCUR?' active':'');
+    btn.innerHTML=`${v.icon} ${k}`;
+    btn.title=v.full;
+    btn.onclick=()=>{VCUR=k;renderVestTabs();renderVest();updateVestScore();};
+    cont.appendChild(btn);
+  });
+}
+
+function renderVest(){
+  const vest=VESTIBULARES[VCUR];
+  const subjF=document.getElementById('vf-subj').value;
+  const diffF=document.getElementById('vf-diff').value;
+  let qs=vest.questions;
+  if(subjF)qs=qs.filter(q=>q.subj===subjF);
+  if(diffF)qs=qs.filter(q=>q.diff===diffF);
+  document.getElementById('vest-count').textContent=qs.length+' questão(ões)';
+  const list=document.getElementById('vest-list');
+  list.innerHTML='';
+  if(!qs.length){
+    list.innerHTML=`<div class="no-qs"><div class="nq-icon">&#128218;</div><p>Nenhuma questão encontrada com esses filtros.</p></div>`;
+    return;
+  }
+  qs.forEach((q,idx)=>{
+    const ans=UD.vestStats.answers||{};
+    const answered=ans[q.id]!==undefined;
+    const correct=answered&&ans[q.id]===q.a;
+    const div=document.createElement('div');
+    div.className='vq-card'+(answered?' answered'+(correct?'':' wrong'):'');
+    div.innerHTML=`
+      <div class="vq-meta">
+        <span class="vq-badge vq-year">${q.year}</span>
+        <span class="vq-badge vq-subj">${q.subj}</span>
+        <span class="vq-diff diff-${q.diff==='Fácil'?'f':q.diff==='Médio'?'m':'d'}">${q.diff}</span>
+        <span class="vq-num">Q${idx+1}</span>
+      </div>
+      <div class="vq-txt">${q.txt}</div>
+      <div class="vq-opts" id="vqopts-${q.id}"></div>
+      <div class="vq-exp ${answered?(correct?'correct show':'wrong show'):''}" id="vqexp-${q.id}">
+        ${answered?(correct?'✓ Correto! ':'✗ Errado. ')+q.exp:''}
+      </div>`;
+    list.appendChild(div);
+    const optsEl=div.querySelector(`#vqopts-${q.id}`);
+    const letters=['A','B','C','D','E'];
+    q.opts.forEach((opt,i)=>{
+      const btn=document.createElement('button');
+      btn.className='vq-opt';
+      btn.innerHTML=`<span class="ol">${letters[i]}</span>${opt}`;
+      if(answered){
+        btn.disabled=true;
+        if(i===q.a)btn.classList.add('correct');
+        else if(i===ans[q.id])btn.classList.add('wrong');
+      }else{
+        btn.onclick=()=>answerVest(q,i,div);
+      }
+      optsEl.appendChild(btn);
+    });
+  });
+}
+
+function answerVest(q,chosen,card){
+  const ok=chosen===q.a;
+  if(!UD.vestStats.answers)UD.vestStats.answers={};
+  UD.vestStats.answers[q.id]=chosen;
+  UD.vestStats.total=(UD.vestStats.total||0)+1;
+  if(ok)UD.vestStats.correct=(UD.vestStats.correct||0)+1;
+  qS();
+  const btns=card.querySelectorAll('.vq-opt');
+  btns.forEach((b,i)=>{b.disabled=true;if(i===q.a)b.classList.add('correct');else if(i===chosen)b.classList.add('wrong');});
+  const exp=card.querySelector(`#vqexp-${q.id}`);
+  exp.className='vq-exp show '+(ok?'correct':'wrong');
+  exp.textContent=(ok?'✓ Correto! ':'✗ Errado. ')+q.exp;
+  card.className='vq-card answered'+(ok?'':' wrong');
+  updateVestScore();
+  document.getElementById('s-vest').textContent=UD.vestStats.total||0;
+}
+
+function updateVestScore(){
+  // Calculate score for current vestibular only
+  const vest=VESTIBULARES[VCUR];
+  const ans=UD.vestStats.answers||{};
+  const ids=vest.questions.map(q=>q.id);
+  const answered=ids.filter(id=>ans[id]!==undefined);
+  const correct=answered.filter(id=>ans[id]===vest.questions.find(q=>q.id===id)?.a);
+  const t=answered.length,c=correct.length;
+  const pct=t?Math.round(c/t*100):0;
+  document.getElementById('vs-num').textContent=t?pct+'%':'—';
+  document.getElementById('vs-txt').textContent=t?`${c}/${t} corretas no ${VCUR} · Total geral: ${UD.vestStats.total||0} questões`:'Responda questões para ver sua pontuação';
+  document.getElementById('s-vest').textContent=UD.vestStats.total||0;
+}
+
+let resetPending=false;
+function resetVestScore(){
+  if(!resetPending){
+    resetPending=true;
+    showToast('Clique novamente para confirmar o reset','error');
+    setTimeout(()=>{resetPending=false;},3000);
+    return;
+  }
+  resetPending=false;
+  UD.vestStats={total:0,correct:0,answers:{}};
+  qS();renderVest();updateVestScore();
+  document.getElementById('s-vest').textContent=0;
+  showToast('Pontuação resetada.','success');
+}
+
+/* ═══════════════════════════════════
+   SCHEDULE
+═══════════════════════════════════ */
+function renderSched(){
+  const grid=document.getElementById('sched-grid');
+  grid.innerHTML='';
+  DAYS.forEach((day,i)=>{
+    const tasks=Array.isArray(UD.schedule[i])?UD.schedule[i]:[];
+    const div=document.createElement('div');
+    div.className='dc';
+    const th=tasks.map((t,ti)=>{
+      const col=TC[t.subj]||'#7c6af0';
+      return `<div class="dtask" style="background:${col}1a;color:${col}" data-d="${i}" data-t="${ti}" title="Clique para remover">${t.time}<br>${t.subj}${t.dur?` (${t.dur}m)`:''}</div>`;
+    }).join('')||'<div style="color:var(--bd);font-size:.66rem;text-align:center;padding:9px 0">&mdash;</div>';
+    div.innerHTML=`<div class="dn">${day}</div><div class="dt">${th}</div>`;
+    div.querySelectorAll('.dtask').forEach(el=>{
+      el.addEventListener('click',()=>{
+        UD.schedule[parseInt(el.dataset.d)].splice(parseInt(el.dataset.t),1);
+        renderSched();qS();showToast('Sess&#227;o removida.','success');
+      });
+    });
+    grid.appendChild(div);
+  });
+}
+function addTask(){
+  const d=parseInt(document.getElementById('s-day').value);
+  const subj=document.getElementById('s-subj').value;
+  const time=document.getElementById('s-time').value;
+  const dur=parseInt(document.getElementById('s-dur').value);
+  if(!Array.isArray(UD.schedule[d]))UD.schedule[d]=[];
+  UD.schedule[d].push({subj,time,dur});
+  UD.schedule[d].sort((a,b)=>a.time.localeCompare(b.time));
+  renderSched();qS();showToast(`${subj} adicionado — ${DAYS[d]}!`,'success');
+}
+
+/* ═══════════════════════════════════
+   REPERTÓRIOS
+═══════════════════════════════════ */
+function renderReps(){
+  const el=document.getElementById('rep-list');
+  if(!el)return;
+  el.innerHTML=REPS.map(r=>`<div><div style="font-size:.71rem;text-transform:uppercase;letter-spacing:.9px;font-weight:600;color:var(--acc2);margin-bottom:7px">${r.a}</div>${r.i.map(it=>`<div style="font-size:.79rem;color:var(--mt);padding:3px 0;border-bottom:1px solid var(--bd)">${it}</div>`).join('')}</div>`).join('');
+}
+
+/* ═══════════════════════════════════
+   TOAST
+═══════════════════════════════════ */
+let TT;
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.innerHTML=msg;t.className='toast '+type+' show';
+  clearTimeout(TT);TT=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+/* ═══════════════════════════════════
+   SEARCH / FILTER SUBJECTS
+═══════════════════════════════════ */
+function filterSubjects(q){
+  const grid=document.getElementById('subjects-grid');
+  const term=q.toLowerCase().trim();
+  if(!term){renderDash();return;}
+  grid.innerHTML='';
+  // Search through subjects AND their topics
+  const results=[];
+  SUBJECTS.forEach(s=>{
+    const nameMatch=s.name.toLowerCase().includes(term);
+    const matchedTopics=s.topics.filter(t=>t.toLowerCase().includes(term));
+    if(nameMatch||matchedTopics.length){
+      results.push({subj:s,topics:nameMatch?s.topics:matchedTopics});
+    }
+  });
+  if(!results.length){
+    grid.innerHTML=`<div style="color:var(--mt);font-size:.88rem;padding:20px 0;grid-column:1/-1">Nenhuma matéria ou tópico encontrado para "<strong>${q}</strong>"</div>`;
+    return;
+  }
+  results.forEach(({subj:s,topics})=>{
+    const tot=s.topics.length;
+    const comp=s.topics.filter(t=>UD.topicsDone[s.id+'_'+t]).length;
+    const pct=Math.round(comp/tot*100);
+    const col=s.color||'#7c6af0';
+    const c=document.createElement('div');
+    c.className='subj-card';c.style.setProperty('--sc',col);
+    const topicHint=topics.length<tot?`<div style="font-size:.7rem;color:${col};margin-top:4px;position:relative">${topics.slice(0,2).join(', ')}${topics.length>2?'…':''}</div>`:'';
+    c.innerHTML=`<span class="sic">${s.icon}</span><div class="sn">${s.name}</div><div class="st">${comp}/${tot} tópicos · ${pct}%</div>${topicHint}<div class="pb" style="margin-top:6px"><div class="pf" style="width:${pct}%;background:${col}"></div></div>`;
+    c.onclick=()=>openSubj(s);
+    grid.appendChild(c);
+  });
+}
+
+/* ═══════════════════════════════════
+   FOCUS MODE
+═══════════════════════════════════ */
+function enterFocus(){
+  document.body.classList.add('focus-mode');
+  showToast('Modo Foco ativado — boa concentração! &#127775;','success');
+}
+function exitFocus(){
+  document.body.classList.remove('focus-mode');
+  showToast('Saiu do Modo Foco','success');
+}
+
+/* ═══════════════════════════════════
+   UNMARK TOPIC
+═══════════════════════════════════ */
+function unmarkDone(){
+  if(!CS||!CT)return;
+  const key=CS.id+'_'+CT;
+  delete UD.topicsDone[key];
+  const btn=document.getElementById('mark-btn');
+  btn.innerHTML='&#10003; Marcar como conclu&#237;do';
+  btn.classList.remove('done');
+  document.getElementById('unmark-btn').classList.remove('visible');
+  // update topic list
+  document.querySelectorAll('.ti-item').forEach(li=>{
+    if(li.querySelector('h4')?.textContent===CT){
+      li.classList.remove('done');
+      li.querySelector('.ti-st').innerHTML='';
+      li.querySelector('.ti-info p').innerHTML='N&#227;o iniciado';
+    }
+  });
+  qS();showToast('T&#243;pico desmarcado.','success');
+}
+
+/* ═══════════════════════════════════
+   READ TIME ESTIMATE
+═══════════════════════════════════ */
+function setReadTime(htmlContent){
+  const words=htmlContent.replace(/<[^>]+>/g,' ').split(/\s+/).filter(Boolean).length;
+  const mins=Math.max(1,Math.round(words/200));
+  const el=document.getElementById('lesson-readtime');
+  if(el)el.textContent=`&#128338; Leitura ~${mins} min`;
+}
+
+/* ═══════════════════════════════════
+   POMODORO TIMER
+═══════════════════════════════════ */
+let POMO={total:25*60,left:25*60,running:false,interval:null,phase:'Foco'};
+const POMO_CIRC=251; // 2*π*40 ≈ 251
+
+function setPomodoro(mins,phase,btn){
+  resetPomo();
+  POMO.total=mins*60;POMO.left=mins*60;POMO.phase=phase;
+  document.getElementById('pomo-phase').textContent=phase;
+  document.querySelectorAll('.pomo-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updatePomoDisplay();
+}
+function togglePomo(){
+  if(POMO.running){
+    clearInterval(POMO.interval);POMO.running=false;
+    document.getElementById('pomo-toggle').innerHTML='&#9654; Continuar';
+  }else{
+    POMO.running=true;
+    document.getElementById('pomo-toggle').innerHTML='&#9646;&#9646; Pausar';
+    POMO.interval=setInterval(()=>{
+      if(POMO.left<=0){
+        clearInterval(POMO.interval);POMO.running=false;
+        document.getElementById('pomo-toggle').innerHTML='&#9654; Iniciar';
+        showToast('&#8987; Timer finalizado! Hora de uma pausa.','success');
+        // pulse effect
+        document.getElementById('pomo-ring').style.stroke='var(--ok)';
+        return;
+      }
+      POMO.left--;
+      updatePomoDisplay();
+    },1000);
+  }
+}
+function resetPomo(){
+  clearInterval(POMO.interval);POMO.running=false;
+  POMO.left=POMO.total;
+  document.getElementById('pomo-toggle').innerHTML='&#9654; Iniciar';
+  document.getElementById('pomo-ring').style.stroke='';
+  updatePomoDisplay();
+}
+function updatePomoDisplay(){
+  const m=Math.floor(POMO.left/60).toString().padStart(2,'0');
+  const s=(POMO.left%60).toString().padStart(2,'0');
+  document.getElementById('pomo-display').textContent=`${m}:${s}`;
+  const pct=POMO.left/POMO.total;
+  const offset=POMO_CIRC*(1-pct);
+  document.getElementById('pomo-ring').style.strokeDashoffset=offset;
+}
+
+/* ═══════════════════════════════════
+   KEYBOARD — flashcards
+═══════════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('screen-flashcards').classList.contains('active'))return;
+  if(e.key===' '){e.preventDefault();flipCard();}
+  if(e.key==='1')rateCard('again');
+  if(e.key==='2')rateCard('good');
+  if(e.key==='3')rateCard('easy');
+});
+</script>
+</body>
+</html>
